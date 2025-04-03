@@ -10,6 +10,7 @@
 
   <modules>
     <module>mcp-migration-appcat</module>
+    <module>mcp-migration-azure</module>
     <module>mcp-migration-openrewrite</module>
   </modules>
 
