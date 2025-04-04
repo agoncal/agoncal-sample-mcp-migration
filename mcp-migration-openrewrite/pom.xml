@@ -23,6 +23,14 @@
 
   <dependencyManagement>
     <dependencies>
+      <!-- OpenRewrite -->
+      <dependency>
+        <groupId>org.openrewrite.recipe</groupId>
+        <artifactId>rewrite-recipe-bom</artifactId>
+        <version>3.5.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <!-- Quarkus -->
       <dependency>
         <groupId>${quarkus.platform.group-id}</groupId>
@@ -35,6 +43,19 @@
   </dependencyManagement>
 
   <dependencies>
+    <!-- OpenRewrite -->
+    <dependency>
+      <groupId>org.openrewrite</groupId>
+      <artifactId>rewrite-java</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.openrewrite</groupId>
+      <artifactId>rewrite-java-17</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.openrewrite.recipe</groupId>
+      <artifactId>rewrite-migrate-java</artifactId>
+    </dependency>
     <!-- Quarkus -->
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -46,11 +67,11 @@
       <artifactId>quarkus-mcp-server-stdio</artifactId>
       <version>${quarkus-mcp-server.version}</version>
     </dependency>
-<!--    <dependency>-->
-<!--      <groupId>io.quarkiverse.mcp</groupId>-->
-<!--      <artifactId>quarkus-mcp-server-sse</artifactId>-->
-<!--      <version>${quarkus-mcp-server.version}</version>-->
-<!--    </dependency>-->
+    <!--    <dependency>-->
+    <!--      <groupId>io.quarkiverse.mcp</groupId>-->
+    <!--      <artifactId>quarkus-mcp-server-sse</artifactId>-->
+    <!--      <version>${quarkus-mcp-server.version}</version>-->
+    <!--    </dependency>-->
   </dependencies>
 
   <build>
