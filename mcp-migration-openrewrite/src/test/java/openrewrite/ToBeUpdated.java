@@ -21,6 +21,6 @@ public class ToBeUpdated {
         });
         someThread.start();
         // This code has to be updated by the ThreadStopUnsupported recipe
-        someThread.resume();
+        someThread.stop();
     }
 }

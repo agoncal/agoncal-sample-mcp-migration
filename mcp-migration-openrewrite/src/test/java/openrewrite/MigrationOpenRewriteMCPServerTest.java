@@ -9,7 +9,7 @@ import org.openrewrite.SourceFile;
 import org.openrewrite.internal.InMemoryLargeSourceSet;
 import org.openrewrite.internal.RecipeIntrospectionUtils;
 import org.openrewrite.java.JavaParser;
-import org.openrewrite.java.migrate.lang.ExplicitRecordImport;
+import org.openrewrite.java.migrate.lang.ThreadStopUnsupported;
 import org.openrewrite.java.migrate.net.URLConstructorToURICreate;
 
 import java.io.File;
@@ -26,10 +26,12 @@ public class MigrationOpenRewriteMCPServerTest {
     public static void main(String[] args) throws IOException {
 
         executeRecipe(URLConstructorToURICreate.class);
-        executeRecipe(ExplicitRecordImport.class);
+        executeRecipe(ThreadStopUnsupported.class);
     }
 
     private static void executeRecipe(Class recipeClass) throws IOException {
+        System.out.println("\nExecuting recipe: " + recipeClass.getName());
+
         // Create execution context
         ExecutionContext executionContext = new InMemoryExecutionContext(t -> t.printStackTrace());
 
@@ -49,16 +51,16 @@ public class MigrationOpenRewriteMCPServerTest {
 
         // Create and configure the recipe
         Recipe recipe = RecipeIntrospectionUtils.constructRecipe(recipeClass);
-//        Recipe recipe = new URLConstructorToURICreate();
+        System.out.println("\t" + recipe.getDisplayName());
+        System.out.println("\t" + recipe.getDescription());
 
         // Apply the recipe
         RecipeRun recipeRun = recipe.run(new InMemoryLargeSourceSet(sourceFiles).generate(sourceFiles), executionContext);
 
         // Process results
         List<Result> results = recipeRun.getChangeset().getAllResults();
+        System.out.println("\t" + results.size() + " changes");
         for (Result result : results) {
-            System.out.println("Changed: " + result.getAfter().printAll());
-
             // Write the changes back to disk
             Files.writeString(result.getBefore().getSourcePath(), result.getAfter().printAll());
         }
