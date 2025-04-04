@@ -7,7 +7,9 @@ import org.openrewrite.RecipeRun;
 import org.openrewrite.Result;
 import org.openrewrite.SourceFile;
 import org.openrewrite.internal.InMemoryLargeSourceSet;
+import org.openrewrite.internal.RecipeIntrospectionUtils;
 import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.migrate.lang.ExplicitRecordImport;
 import org.openrewrite.java.migrate.net.URLConstructorToURICreate;
 
 import java.io.File;
@@ -23,6 +25,11 @@ public class MigrationOpenRewriteMCPServerTest {
 
     public static void main(String[] args) throws IOException {
 
+        executeRecipe(URLConstructorToURICreate.class);
+        executeRecipe(ExplicitRecordImport.class);
+    }
+
+    private static void executeRecipe(Class recipeClass) throws IOException {
         // Create execution context
         ExecutionContext executionContext = new InMemoryExecutionContext(t -> t.printStackTrace());
 
@@ -41,7 +48,8 @@ public class MigrationOpenRewriteMCPServerTest {
         List<SourceFile> sourceFiles = javaParser.parse(sourcePaths, sourceFilePath, executionContext).collect(Collectors.toList());
 
         // Create and configure the recipe
-        Recipe recipe = new URLConstructorToURICreate();
+        Recipe recipe = RecipeIntrospectionUtils.constructRecipe(recipeClass);
+//        Recipe recipe = new URLConstructorToURICreate();
 
         // Apply the recipe
         RecipeRun recipeRun = recipe.run(new InMemoryLargeSourceSet(sourceFiles).generate(sourceFiles), executionContext);
