@@ -4,31 +4,187 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkiverse.mcp.server.McpLog;
 import io.quarkiverse.mcp.server.Resource;
-import io.quarkiverse.mcp.server.TextContent;
 import io.quarkiverse.mcp.server.TextResourceContents;
 import io.quarkiverse.mcp.server.Tool;
 import io.quarkiverse.mcp.server.ToolResponse;
 import org.jboss.logging.Logger;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.InMemoryExecutionContext;
+import org.openrewrite.Recipe;
+import org.openrewrite.RecipeRun;
+import org.openrewrite.Result;
+import org.openrewrite.SourceFile;
+import org.openrewrite.config.OptionDescriptor;
+import org.openrewrite.internal.InMemoryLargeSourceSet;
+import org.openrewrite.internal.RecipeIntrospectionUtils;
+import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.migrate.BeansXmlNamespace;
+import org.openrewrite.java.migrate.CastArraysAsListToList;
+import org.openrewrite.java.migrate.ChangeDefaultKeyStore;
+import org.openrewrite.java.migrate.IllegalArgumentExceptionToAlreadyConnectedException;
+import org.openrewrite.java.migrate.JREThrowableFinalMethods;
+import org.openrewrite.java.migrate.RemovedSecurityManagerMethods;
+import org.openrewrite.java.migrate.ReplaceComSunAWTUtilitiesMethods;
+import org.openrewrite.java.migrate.UpgradeJavaVersion;
+import org.openrewrite.java.migrate.UseJavaUtilBase64;
+import org.openrewrite.java.migrate.io.ReplaceFileInOrOutputStreamFinalizeWithClose;
+import org.openrewrite.java.migrate.jakarta.ApplicationPathWildcardNoLongerAccepted;
+import org.openrewrite.java.migrate.jakarta.RemoveBeanIsNullable;
+import org.openrewrite.java.migrate.jakarta.UpdateAnnotationAttributeJavaxToJakarta;
+import org.openrewrite.java.migrate.jakarta.UpdateBeanManagerMethods;
+import org.openrewrite.java.migrate.jakarta.UpdateGetRealPath;
+import org.openrewrite.java.migrate.javax.AddColumnAnnotation;
+import org.openrewrite.java.migrate.javax.AddDefaultConstructorToEntityClass;
+import org.openrewrite.java.migrate.javax.AddJaxwsRuntime;
+import org.openrewrite.java.migrate.javax.RemoveTemporalAnnotation;
+import org.openrewrite.java.migrate.lang.StringFormatted;
+import org.openrewrite.java.migrate.lang.ThreadStopUnsupported;
+import org.openrewrite.java.migrate.lang.UseStringIsEmptyRecipe;
+import org.openrewrite.java.migrate.lang.UseTextBlocks;
+import org.openrewrite.java.migrate.logging.MigrateLogRecordSetMillisToSetInstant;
+import org.openrewrite.java.migrate.logging.MigrateLoggerGlobalToGetGlobal;
+import org.openrewrite.java.migrate.net.MigrateURLDecoderDecode;
+import org.openrewrite.java.migrate.net.MigrateURLEncoderEncode;
+import org.openrewrite.java.migrate.net.URLConstructorToURICreate;
+import org.openrewrite.java.migrate.net.URLConstructorsToNewURI;
+import org.openrewrite.java.migrate.sql.MigrateDriverManagerSetLogStream;
+import org.openrewrite.java.migrate.util.IteratorNext;
+import org.openrewrite.java.migrate.util.ListFirstAndLast;
+import org.openrewrite.java.migrate.util.MigrateCollectionsSingletonList;
+import org.openrewrite.java.migrate.util.MigrateCollectionsSingletonMap;
+import org.openrewrite.java.migrate.util.MigrateCollectionsUnmodifiableList;
+import org.openrewrite.java.migrate.util.UseEnumSetOf;
+import org.openrewrite.java.migrate.util.UseLocaleOf;
+import org.openrewrite.java.migrate.util.UseMapOf;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MigrationOpenRewriteMCPServer {
 
     private static final Logger log = Logger.getLogger(MigrationOpenRewriteMCPServer.class);
 
-    @Tool(name = "lists_all_the_openrewrite_recipes", description = "Lists all the available OpenRewrite recipes.")
-    public ToolResponse listsAllOpenrewriteRecipes(McpLog mcpLog) {
-        log.info("Lists all the available OpenRewrite recipes.");
+    static final List<Class> recipesToExpose = List.of(
+        BeansXmlNamespace.class,
+        CastArraysAsListToList.class,
+        ChangeDefaultKeyStore.class,
+        IllegalArgumentExceptionToAlreadyConnectedException.class,
+        JREThrowableFinalMethods.class,
+        RemovedSecurityManagerMethods.class,
+        ReplaceComSunAWTUtilitiesMethods.class,
+        UpgradeJavaVersion.class,
+        UseJavaUtilBase64.class,
+        ThreadStopUnsupported.class,
+        ReplaceFileInOrOutputStreamFinalizeWithClose.class,
+        ApplicationPathWildcardNoLongerAccepted.class,
+        RemoveBeanIsNullable.class,
+        UpdateAnnotationAttributeJavaxToJakarta.class,
+        UpdateBeanManagerMethods.class,
+        UpdateGetRealPath.class,
+        AddColumnAnnotation.class,
+        URLConstructorToURICreate.class,
+        AddDefaultConstructorToEntityClass.class,
+        AddJaxwsRuntime.class,
+        RemoveTemporalAnnotation.class,
+        StringFormatted.class,
+        UseStringIsEmptyRecipe.class,
+        UseTextBlocks.class,
+        MigrateLoggerGlobalToGetGlobal.class,
+        MigrateLogRecordSetMillisToSetInstant.class,
+        MigrateURLDecoderDecode.class,
+        MigrateURLEncoderEncode.class,
+        URLConstructorsToNewURI.class,
+        MigrateDriverManagerSetLogStream.class,
+        IteratorNext.class,
+        ListFirstAndLast.class,
+        MigrateCollectionsSingletonList.class,
+        MigrateCollectionsSingletonMap.class,
+        MigrateCollectionsUnmodifiableList.class,
+        UseEnumSetOf.class,
+        UseLocaleOf.class,
+        UseMapOf.class
+    );
 
-        List<TextContent> recipes = List.of(
-            new TextContent(new Recipe("Migrate to Java 21", "org.openrewrite.java.migrate.RemoveIllegalSemicolons", "Remove illegal semicolons", "Remove semicolons after package declarations and imports, no longer accepted in Java 21 as of [JDK-8027682](https://bugs.openjdk.org/browse/JDK-8027682).").toString()),
-            new TextContent(new Recipe("Migrate to Java 21", "org.openrewrite.java.migrate.lang.ThreadStopUnsupported", "Replace `Thread.resume()`, `Thread.stop()`, and `Thread.suspend()` with `throw new UnsupportedOperationException()`", "`Thread.resume()`, `Thread.stop()`, and `Thread.suspend()` always throws a `new UnsupportedOperationException` in Java 21+. This recipe makes that explicit, as the migration is more complicated.See https").toString()),
-            new TextContent(new Recipe("Migrate to Java 21", "org.openrewrite.java.migrate.net.URLConstructorToURICreate", "Convert `new URL(String)` to `URI.create(String).toURL()`", "Converts `new URL(String)` constructor to `URI.create(String).toURL()`.").toString()),
-            new TextContent(new Recipe("Migrate to Java 21", "org.openrewrite.java.migrate.lang.ExplicitRecordImport", "Add explicit import for `Record` classes", "Add explicit import for `Record` classes when upgrading past Java 14+, to avoid conflicts with `java.lang.Record`.").toString())
-        );
+    @Tool(name = "url_constructor_to_uri_create", description = "Converts `new URL(String)` constructor to `URI.create(String).toURL()`.")
+    public ToolResponse executeURLConstructorToURICreateRecipe(McpLog mcpLog) throws IOException {
+        log.info("Execute URLConstructorToURICreate Recipe");
 
-        mcpLog.info("Returning " + recipes.size() + " recipes");
-        return ToolResponse.success(recipes);
+        // Create execution context
+        ExecutionContext executionContext = new InMemoryExecutionContext(t -> t.printStackTrace());
+
+        // Create Java parser
+        JavaParser javaParser = JavaParser.fromJavaVersion()
+            .logCompilationWarningsAndErrors(true)
+            .build();
+
+        // Specify source files to process
+        Path sourceFilePath = Paths.get("/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration");
+
+        // Recursively find all Java files in the directory and its subdirectories
+        List<Path> sourcePaths = findJavaFiles(sourceFilePath.toFile());
+
+        // Parse the source files
+        List<SourceFile> sourceFiles = javaParser.parse(sourcePaths, sourceFilePath, executionContext).collect(Collectors.toList());
+
+        // Create and configure the recipe
+        Recipe recipe = RecipeIntrospectionUtils.constructRecipe(URLConstructorToURICreate.class);
+
+        // Apply the recipe
+        RecipeRun recipeRun = recipe.run(new InMemoryLargeSourceSet(sourceFiles).generate(sourceFiles), executionContext);
+
+        // Process results
+        List<Result> results = recipeRun.getChangeset().getAllResults();
+        for (Result result : results) {
+            // Write the changes back to disk
+            Files.writeString(result.getBefore().getSourcePath(), result.getAfter().printAll());
+        }
+
+        mcpLog.info("Executed " + recipe.getDisplayName() + " and made " + results.size() + " changes");
+        return ToolResponse.success();
+    }
+
+    @Tool(name = "string_formatted", description = "Prefer `String.formatted(Object...)` over `String.format(String, Object...)` in Java 17 or higher.")
+    public ToolResponse executeStringFormattedRecipe(McpLog mcpLog) throws IOException {
+        log.info("Execute StringFormatted Recipe");
+
+        // Create execution context
+        ExecutionContext executionContext = new InMemoryExecutionContext(t -> t.printStackTrace());
+
+        // Create Java parser
+        JavaParser javaParser = JavaParser.fromJavaVersion()
+            .logCompilationWarningsAndErrors(true)
+            .build();
+
+        // Specify source files to process
+        Path sourceFilePath = Paths.get("/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration");
+
+        // Recursively find all Java files in the directory and its subdirectories
+        List<Path> sourcePaths = findJavaFiles(sourceFilePath.toFile());
+
+        // Parse the source files
+        List<SourceFile> sourceFiles = javaParser.parse(sourcePaths, sourceFilePath, executionContext).collect(Collectors.toList());
+
+        // Create and configure the recipe
+        Recipe recipe = RecipeIntrospectionUtils.constructRecipe(StringFormatted.class);
+
+        // Apply the recipe
+        RecipeRun recipeRun = recipe.run(new InMemoryLargeSourceSet(sourceFiles).generate(sourceFiles), executionContext);
+
+        // Process results
+        List<Result> results = recipeRun.getChangeset().getAllResults();
+        for (Result result : results) {
+            // Write the changes back to disk
+            Files.writeString(result.getBefore().getSourcePath(), result.getAfter().printAll());
+        }
+
+        mcpLog.info("Executed " + recipe.getDisplayName() + " and made " + results.size() + " changes");
+        return ToolResponse.success();
     }
 
     @Resource(name = "lists_all_the_openrewrite_recipes",
@@ -38,19 +194,79 @@ public class MigrationOpenRewriteMCPServer {
     )
     public TextResourceContents dataAllOpenrewriteRecipes() throws JsonProcessingException {
 
-        List<Recipe> recipes = List.of(
-            new Recipe("Migrate to Java 21", "org.openrewrite.java.migrate.RemoveIllegalSemicolons", "Remove illegal semicolons", "Remove semicolons after package declarations and imports, no longer accepted in Java 21 as of [JDK-8027682](https://bugs.openjdk.org/browse/JDK-8027682)."),
-            new Recipe("Migrate to Java 21", "org.openrewrite.java.migrate.lang.ThreadStopUnsupported", "Replace `Thread.resume()`, `Thread.stop()`, and `Thread.suspend()` with `throw new UnsupportedOperationException()`", "`Thread.resume()`, `Thread.stop()`, and `Thread.suspend()` always throws a `new UnsupportedOperationException` in Java 21+. This recipe makes that explicit, as the migration is more complicated.See https"),
-            new Recipe("Migrate to Java 21", "org.openrewrite.java.migrate.net.URLConstructorToURICreate", "Convert `new URL(String)` to `URI.create(String).toURL()`", "Converts `new URL(String)` constructor to `URI.create(String).toURL()`."),
-            new Recipe("Migrate to Java 21", "org.openrewrite.java.migrate.lang.ExplicitRecordImport", "Add explicit import for `Record` classes", "Add explicit import for `Record` classes when upgrading past Java 14+, to avoid conflicts with `java.lang.Record`.")
-        );
+
+        return TextResourceContents.create("file:///Users/agoncal/Documents/recipes.json", getRecipeAsJson());
+    }
+
+    static String getRecipeAsJson() throws JsonProcessingException {
+
+        List<RecipeJson> jsonRecipes = new ArrayList<>();
+        for (Class recipeClass : recipesToExpose) {
+
+            Recipe recipe = RecipeIntrospectionUtils.constructRecipe(recipeClass);
+
+            List<OptionJson> jsonOptions = new ArrayList<>();
+            for (OptionDescriptor optionDescriptor : recipe.getDescriptor().getOptions()) {
+                jsonOptions.add(new OptionJson(camelToSnakeCase(optionDescriptor.getName()), optionDescriptor.getDisplayName(), optionDescriptor.getDescription(), optionDescriptor.getType()));
+            }
+
+            jsonRecipes.add(new RecipeJson("Java Migration", recipe.getName(), camelToSnakeCase(recipe.getClass().getSimpleName()), recipe.getDisplayName(), recipe.getDescription(), jsonOptions));
+        }
 
         ObjectMapper mapper = new ObjectMapper();
+        return mapper.writeValueAsString(jsonRecipes);
+    }
 
-        return TextResourceContents.create("file:///Users/agoncal/Documents/recipes.json", mapper.writeValueAsString(recipes));
+    static String camelToSnakeCase(String camelCase) {
+        if (camelCase == null || camelCase.isEmpty()) {
+            return camelCase;
+        }
+
+        StringBuilder result = new StringBuilder();
+        result.append(Character.toLowerCase(camelCase.charAt(0)));
+
+        for (int i = 1; i < camelCase.length(); i++) {
+            char currentChar = camelCase.charAt(i);
+            if (Character.isUpperCase(currentChar)) {
+                result.append('_');
+                result.append(Character.toLowerCase(currentChar));
+            } else {
+                result.append(currentChar);
+            }
+        }
+
+        return result.toString();
+    }
+
+    // Helper method to recursively find all Java files
+    private static List<Path> findJavaFiles(File directory) {
+        List<Path> files = new ArrayList<>();
+        if (directory.exists()) {
+            collectJavaFiles(directory, files);
+        } else {
+            System.err.println("Directory does not exist: " + directory);
+        }
+        return files;
+    }
+
+    private static void collectJavaFiles(File directory, List<Path> files) {
+        File[] fileList = directory.listFiles();
+        if (fileList != null) {
+            for (File file : fileList) {
+                if (file.isDirectory()) {
+                    collectJavaFiles(file, files);
+                } else if (file.getName().endsWith(".java")) {
+                    files.add(file.toPath());
+                }
+            }
+        }
     }
 }
 
-record Recipe(String migration, String fqn, String name, String description) {
+record RecipeJson(String migration, String fqn, String name, String displayName, String description,
+                  List<OptionJson> options) {
+}
+
+record OptionJson(String name, String displayName, String description, String type) {
 }
 

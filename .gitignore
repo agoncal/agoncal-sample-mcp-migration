@@ -61,3 +61,5 @@ out/
 
 # TLS Certificates
 .certs/
+
+dummy.*

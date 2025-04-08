@@ -1,4 +1,4 @@
-package openrewrite;
+package org.agoncal.sample.mcp.migration.openrewrite;
 
 import java.net.URI;
 import java.net.URL;
@@ -10,6 +10,9 @@ public class ToBeUpdated {
         // This code has to be updated by the URLConstructorToURICreate recipe
         URL url = new URL("http://www.google.com");
         URI uri = new URI("http://www.google.com");
+
+        String s1 = String.format("My String", 1);
+        String s2 = String.format("My String", 2);
 
         ToBeUpdated me = new ToBeUpdated();
         me.getResume();

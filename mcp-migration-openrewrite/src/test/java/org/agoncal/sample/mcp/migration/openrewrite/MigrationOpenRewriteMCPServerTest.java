@@ -1,4 +1,4 @@
-package openrewrite;
+package org.agoncal.sample.mcp.migration.openrewrite;
 
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.InMemoryExecutionContext;

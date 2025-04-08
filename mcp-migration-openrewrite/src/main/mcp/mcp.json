@@ -1,6 +1,6 @@
 {
   "servers": {
-    "migration-openrewrite": {
+    "java_migration-openrewrite_recipes": {
       "type": "stdio",
       "command": "/Users/agoncal/.sdkman/candidates/java/23.0.1-tem/bin/java",
       "args": [
