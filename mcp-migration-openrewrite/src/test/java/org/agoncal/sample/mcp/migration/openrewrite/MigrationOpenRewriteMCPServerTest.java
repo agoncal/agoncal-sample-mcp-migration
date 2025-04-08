@@ -7,15 +7,19 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.junit.jupiter.api.Test;
 
+import jakarta.inject.Inject;
 import java.io.IOException;
 
 @QuarkusTest
 public class MigrationOpenRewriteMCPServerTest {
 
+    @Inject
+    MigrationOpenRewriteMCPServer openRewriteMCPServer;
+
     @Test
     public void testGetRecipeAsJson() throws JsonProcessingException {
         // When
-        String result = MigrationOpenRewriteMCPServer.getRecipeAsJson();
+        String result = openRewriteMCPServer.getRecipeAsJson();
 
         // Then
         assertNotNull(result, "The JSON string should not be null");
@@ -25,8 +29,7 @@ public class MigrationOpenRewriteMCPServerTest {
     @Test
     public void testExecuteURLConstructorToURICreateRecipe() throws IOException {
         // When
-        MigrationOpenRewriteMCPServer migrationOpenRewriteMCPServer = new MigrationOpenRewriteMCPServer();
-        ToolResponse result = migrationOpenRewriteMCPServer.executeURLConstructorToURICreateRecipe();
+        ToolResponse result = openRewriteMCPServer.executeURLConstructorToURICreateRecipe();
 
         // Then
         assertNotNull(result, "The JSON string should not be null");

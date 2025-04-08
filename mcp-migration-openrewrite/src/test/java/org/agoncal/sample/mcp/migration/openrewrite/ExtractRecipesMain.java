@@ -1,7 +1,6 @@
 package org.agoncal.sample.mcp.migration.openrewrite;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import static org.agoncal.sample.mcp.migration.openrewrite.MigrationOpenRewriteMCPServer.getRecipeAsJson;
 import org.openrewrite.Contributor;
 import org.openrewrite.Recipe;
 import org.openrewrite.config.DataTableDescriptor;
@@ -93,6 +92,6 @@ public class ExtractRecipesMain {
     }
 
     private static void recipeToJson() throws JsonProcessingException {
-        System.out.println(getRecipeAsJson());
+        System.out.println(new MigrationOpenRewriteMCPServer().getRecipeAsJson());
     }
 }

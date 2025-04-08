@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkiverse.mcp.server.Tool;
 import io.quarkiverse.mcp.server.ToolResponse;
+import jakarta.annotation.PostConstruct;
 import org.jboss.logging.Logger;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.InMemoryExecutionContext;
@@ -66,7 +67,23 @@ import java.util.stream.Collectors;
 public class MigrationOpenRewriteMCPServer {
 
     private static final Logger log = Logger.getLogger(MigrationOpenRewriteMCPServer.class);
-    public static final String ROOT_PATH = "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration";
+    private static final String ROOT = "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration";
+    private static final Path ROOT_PATH = Paths.get(ROOT);
+    private static final File ROOT_DIRECTORY = Paths.get(ROOT).toFile();
+    private static List<Path> JAVA_FILES;
+
+    @PostConstruct
+    void findJavaFiles() {
+        log.info("Finding the number of Java files in the directory: " + ROOT);
+        JAVA_FILES = new ArrayList<>();
+        if (ROOT_DIRECTORY.exists()) {
+            collectJavaFiles(ROOT_DIRECTORY, JAVA_FILES);
+        } else {
+            System.err.println("Directory does not exist: " + ROOT_DIRECTORY);
+        }
+
+        log.info("Found " + JAVA_FILES.size() + " Java files in the directory: " + ROOT_DIRECTORY);
+    }
 
     static final List<Class> recipesToExpose = List.of(
         BeansXmlNamespace.class,
@@ -109,48 +126,211 @@ public class MigrationOpenRewriteMCPServer {
         UseMapOf.class
     );
 
+    @Tool(name = "beans_xml_namespace", description = "Change `beans.xml` `schemaLocation` to match XML namespace. Set the `schemaLocation` that corresponds to the `xmlns` set in `beans.xml` files.")
+    public ToolResponse executeBeansXmlNamespaceRecipe() throws IOException {
+        log.info("Execute BeansXmlNamespace Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(BeansXmlNamespace.class));
+    }
+
+    @Tool(name = "cast_arrays_as_list_to_list", description = "Remove explicit casts on `Arrays.asList(..).toArray()`. Convert code like `(Integer[]) Arrays.asList(1, 2, 3).toArray()` to `Arrays.asList(1, 2, 3).toArray(new Integer[0])`.")
+    public ToolResponse executeCastArraysAsListToListRecipe() throws IOException {
+        log.info("Execute CastArraysAsListToList Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(CastArraysAsListToList.class));
+    }
+
+    @Tool(name = "change_default_key_store", description = "Return String `jks` when  `KeyStore.getDefaultType()` is called. In Java 11 the default keystore was updated from JKS to PKCS12. As a result, applications relying on KeyStore.getDefaultType() may encounter issues after migrating, unless their JKS keystore has been converted to PKCS12. This recipe returns default key store of `jks` when `KeyStore.getDefaultType()` method is called to use the pre Java 11 default keystore.")
+    public ToolResponse executeChangeDefaultKeyStoreRecipe() throws IOException {
+        log.info("Execute ChangeDefaultKeyStore Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(ChangeDefaultKeyStore.class));
+    }
+
+    @Tool(name = "illegal_argument_exception_to_already_connected_exception", description = "Replace `IllegalArgumentException` with `AlreadyConnectedException` for DatagramChannel.send() to ensure compatibility with Java 11+.")
+    public ToolResponse executeIllegalArgumentExceptionToAlreadyConnectedExceptionRecipe() throws IOException {
+        log.info("Execute IllegalArgumentExceptionToAlreadyConnectedException Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(IllegalArgumentExceptionToAlreadyConnectedException.class));
+    }
+
+    @Tool(name = "jre_throwable_final_methods", description = "Rename final method declarations `getSuppressed()` and `addSuppressed(Throwable exception)` in classes that extend `Throwable`")
+    public ToolResponse executeJREThrowableFinalMethodsRecipe() throws IOException {
+        log.info("Execute JREThrowableFinalMethods Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(JREThrowableFinalMethods.class));
+    }
+
+    @Tool(name = "removed_security_manager_methods", description = "Replace deprecated methods in`SecurityManager`. Replace `SecurityManager` methods `checkAwtEventQueueAccess()`, `checkSystemClipboardAccess()`, `checkMemberAccess()` and `checkTopLevelWindow()` deprecated in Java SE 11 by `checkPermission(new java.security.AllPermission())`.")
+    public ToolResponse executeRemovedSecurityManagerMethodsRecipe() throws IOException {
+        log.info("Execute RemovedSecurityManagerMethods Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(RemovedSecurityManagerMethods.class));
+    }
+
+    @Tool(name = "thread_stop_unsupported", description = "Replace `Thread.resume()`, `Thread.stop()`, and `Thread.suspend()` with `throw new UnsupportedOperationException()`")
+    public ToolResponse executeThreadStopUnsupportedRecipe() throws IOException {
+        log.info("Execute ThreadStopUnsupported Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(ThreadStopUnsupported.class));
+    }
+
+    @Tool(name = "replace_file_in_or_output_stream_finalize_with_close", description = "Replace invocations of `finalize()` on `FileInputStream` and `FileOutputStream` with `close()`. Replace invocations of the deprecated `finalize()` method on `FileInputStream` and `FileOutputStream` with `close()`.")
+    public ToolResponse executeReplaceFileInOrOutputStreamFinalizeWithCloseRecipe() throws IOException {
+        log.info("Execute ReplaceFileInOrOutputStreamFinalizeWithClose Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(ReplaceFileInOrOutputStreamFinalizeWithClose.class));
+    }
+
+    @Tool(name = "application_path_wildcard_no_longer_accepted", description = "Remove trailing `/*` from `jakarta.ws.rs.ApplicationPath` values.")
+    public ToolResponse executeApplicationPathWildcardNoLongerAcceptedRecipe() throws IOException {
+        log.info("Execute ApplicationPathWildcardNoLongerAccepted Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(ApplicationPathWildcardNoLongerAccepted.class));
+    }
+
+    @Tool(name = "remove_bean_is_nullable", description = "Remove `Bean.isNullable()`. `Bean.isNullable()` has been removed in CDI 4.0.0, and now always returns `false`.")
+    public ToolResponse executeRemoveBeanIsNullableRecipe() throws IOException {
+        log.info("Execute RemoveBeanIsNullable Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(RemoveBeanIsNullable.class));
+    }
+
+    @Tool(name = "update_bean_manager_methods", description = "Update `fireEvent()` and `createInjectionTarget()` calls.  Updates `BeanManager.fireEvent()` or `BeanManager.createInjectionTarget()`.")
+    public ToolResponse executeUpdateBeanManagerMethodsRecipe() throws IOException {
+        log.info("Execute UpdateBeanManagerMethods Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(UpdateBeanManagerMethods.class));
+    }
+
+    @Tool(name = "update_get_real_path", description = "Updates `getRealPath()` to call `getContext()` followed by `getRealPath()`. Updates `getRealPath()` for `jakarta.servlet.ServletRequest` and `jakarta.servlet.ServletRequestWrapper` to use `ServletContext.getRealPath(String)`.")
+    public ToolResponse executeUpdateGetRealPathRecipe() throws IOException {
+        log.info("Execute UpdateGetRealPath Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(UpdateGetRealPath.class));
+    }
+
+    @Tool(name = "add_column_annotation", description = "`@ElementCollection` annotations must be accompanied by a defined `@Column` annotation. When an attribute is annotated with `@ElementCollection`, a separate table is created for the attribute that includes the attribute \nID and value. In OpenJPA, the column for the annotated attribute is named element, whereas EclipseLink names the column based on \nthe name of the attribute. To remain compatible with tables that were created with OpenJPA, add a `@Column` annotation with the name \nattribute set to element.")
+    public ToolResponse executeAddColumnAnnotationRecipe() throws IOException {
+        log.info("Execute AddColumnAnnotation Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(AddColumnAnnotation.class));
+    }
+
     @Tool(name = "url_constructor_to_uri_create", description = "Converts `new URL(String)` constructor to `URI.create(String).toURL()`.")
     public ToolResponse executeURLConstructorToURICreateRecipe() throws IOException {
         log.info("Execute URLConstructorToURICreate Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(URLConstructorToURICreate.class));
+    }
 
-        // Create execution context
-        ExecutionContext executionContext = new InMemoryExecutionContext(t -> t.printStackTrace());
+    @Tool(name = "add_default_constructor_to_entity_class", description = "`@Entity` objects with constructors must also have a default constructor. When a Java Persistence API (JPA) entity class has a constructor with arguments, the class must also have a default, no-argument constructor. The OpenJPA implementation automatically generates the no-argument constructor, but the EclipseLink implementation does not.")
+    public ToolResponse executeAddDefaultConstructorToEntityClassRecipe() throws IOException {
+        log.info("Execute AddDefaultConstructorToEntityClass Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(AddDefaultConstructorToEntityClass.class));
+    }
 
-        // Create Java parser
-        JavaParser javaParser = JavaParser.fromJavaVersion()
-            .logCompilationWarningsAndErrors(true)
-            .build();
+    @Tool(name = "add_jaxws_runtime", description = "Use the latest JAX-WS API and runtime for Jakarta EE 8. Update build files to use the latest JAX-WS runtime from Jakarta EE 8 to maintain compatibility with Java version 11 or greater. The recipe will add a JAX-WS run-time, in Gradle `compileOnly`+`testImplementation` and Maven `provided` scope, to any project that has a transitive dependency on the JAX-WS API. **The resulting dependencies still use the `javax` namespace, despite the move to the Jakarta artifact**.")
+    public ToolResponse executeAddJaxwsRuntimeRecipe() throws IOException {
+        log.info("Execute AddJaxwsRuntime Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(AddJaxwsRuntime.class));
+    }
 
-        // Specify source files to process
-        Path sourceFilePath = Paths.get(ROOT_PATH);
-
-        // Recursively find all Java files in the directory and its subdirectories
-        List<Path> sourcePaths = findJavaFiles(sourceFilePath.toFile());
-
-        // Parse the source files
-        List<SourceFile> sourceFiles = javaParser.parse(sourcePaths, sourceFilePath, executionContext).collect(Collectors.toList());
-
-        // Create and configure the recipe
-        Recipe recipe = RecipeIntrospectionUtils.constructRecipe(URLConstructorToURICreate.class);
-
-        // Apply the recipe
-        RecipeRun recipeRun = recipe.run(new InMemoryLargeSourceSet(sourceFiles).generate(sourceFiles), executionContext);
-
-        // Process results
-        List<Result> results = recipeRun.getChangeset().getAllResults();
-        for (Result result : results) {
-            // Write the changes back to disk
-            Path absolutePath = Paths.get(ROOT_PATH).resolve(result.getBefore().getSourcePath());
-            Files.writeString(absolutePath, result.getAfter().printAll());
-        }
-
-        return ToolResponse.success("Executing " + recipe.getDisplayName() + " made " + results.size() + " changes in the code located in " + ROOT_PATH);
+    @Tool(name = "remove_temporal_annotation", description = "Remove the `@Temporal` annotation for some `java.sql` attributes. OpenJPA persists the fields of attributes of type `java.sql.Date`, `java.sql.Time`, or `java.sql.Timestamp` that have a `javax.persistence.Temporal` annotation, whereas EclipseLink throws an exception. Remove the `@Temporal` annotation so the behavior in EclipseLink will match the behavior in OpenJPA.")
+    public ToolResponse executeRemoveTemporalAnnotationRecipe() throws IOException {
+        log.info("Execute RemoveTemporalAnnotation Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(RemoveTemporalAnnotation.class));
     }
 
     @Tool(name = "string_formatted", description = "Prefer `String.formatted(Object...)` over `String.format(String, Object...)` in Java 17 or higher.")
     public ToolResponse executeStringFormattedRecipe() throws IOException {
         log.info("Execute StringFormatted Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(StringFormatted.class));
+    }
 
+    @Tool(name = "use_string_is_empty_recipe", description = "Replace `0 < s.length()` and `s.length() != 0` with `!s.isEmpty()`.")
+    public ToolResponse executeUseStringIsEmptyRecipeRecipe() throws IOException {
+        log.info("Execute UseStringIsEmptyRecipe Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(UseStringIsEmptyRecipe.class));
+    }
+
+    @Tool(name = "migrate_logger_global_to_get_global", description = "Use `Logger#getGlobal()`. The preferred way to get the global logger object is via the call `Logger#getGlobal()` over direct field access to `java.util.logging.Logger.global`.")
+    public ToolResponse executeMigrateLoggerGlobalToGetGlobalRecipe() throws IOException {
+        log.info("Execute MigrateLoggerGlobalToGetGlobal Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(MigrateLoggerGlobalToGetGlobal.class));
+    }
+
+    @Tool(name = "migrate_log_record_set_millis_to_set_instant", description = "Use `LogRecord#setInstant(Instant)` instead of the deprecated `LogRecord#setMillis(long)` in Java 9 or higher.")
+    public ToolResponse executeMigrateLogRecordSetMillisToSetInstantRecipe() throws IOException {
+        log.info("Execute MigrateLogRecordSetMillisToSetInstant Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(MigrateLogRecordSetMillisToSetInstant.class));
+    }
+
+    @Tool(name = "migrate_url_decoder_decode", description = "Use `java.net.URLDecoder#decode(String, StandardCharsets.UTF_8)` instead of the deprecated `java.net.URLDecoder#decode(String)` in Java 10 or higher.")
+    public ToolResponse executeMigrateURLDecoderDecodeRecipe() throws IOException {
+        log.info("Execute MigrateURLDecoderDecode Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(MigrateURLDecoderDecode.class));
+    }
+
+    @Tool(name = "migrate_url_encoder_encode", description = "Use `java.net.URLEncoder#encode(String, StandardCharsets.UTF_8)` instead of the deprecated `java.net.URLEncoder#encode(String)` in Java 10 or higher.")
+    public ToolResponse executeMigrateURLEncoderEncodeRecipe() throws IOException {
+        log.info("Execute MigrateURLEncoderEncode Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(MigrateURLEncoderEncode.class));
+    }
+
+    @Tool(name = "url_constructors_to_new_uri", description = "Converts `new URL(String, ..)` constructors to `new URI(String, ..).toURL()`.")
+    public ToolResponse executeURLConstructorsToNewURIRecipe() throws IOException {
+        log.info("Execute URLConstructorsToNewURI Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(URLConstructorsToNewURI.class));
+    }
+
+    @Tool(name = "migrate_driver_manager_set_log_stream", description = "Use `DriverManager#setLogWriter(java.io.PrintWriter)` instead of the deprecated `DriverManager#setLogStream(java.io.PrintStream)` in Java 1.2 or higher.")
+    public ToolResponse executeMigrateDriverManagerSetLogStreamRecipe() throws IOException {
+        log.info("Execute MigrateDriverManagerSetLogStream Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(MigrateDriverManagerSetLogStream.class));
+    }
+
+    @Tool(name = "iterator_next", description = "Replace `iterator().next()` with `getFirst()`. Replace `SequencedCollection.iterator().next()` with `getFirst()`.")
+    public ToolResponse executeIteratorNextRecipe() throws IOException {
+        log.info("Execute IteratorNext Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(IteratorNext.class));
+    }
+
+    @Tool(name = "list_first_and_last", description = "Replace `List.get(int)`, `add(int, Object)`, and `remove(int)` with `SequencedCollection` `*First` and `*Last` methods. Replace `list.get(0)` with `list.getFirst()`, `list.get(list.size() - 1)` with `list.getLast()`, and similar for `add(int, E)` and `remove(int)`.")
+    public ToolResponse executeListFirstAndLastRecipe() throws IOException {
+        log.info("Execute ListFirstAndLast Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(ListFirstAndLast.class));
+    }
+
+    @Tool(name = "migrate_collections_singleton_list", description = "Prefer `List.of(..)` instead of using `Collections.singletonList()` in Java 9 or higher.")
+    public ToolResponse executeMigrateCollectionsSingletonListRecipe() throws IOException {
+        log.info("Execute MigrateCollectionsSingletonList Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(MigrateCollectionsSingletonList.class));
+    }
+
+    @Tool(name = "migrate_collections_singleton_map", description = "Prefer `Map.Of(..)` instead of using `Collections.singletonMap()` in Java 9 or higher.")
+    public ToolResponse executeMigrateCollectionsSingletonMapRecipe() throws IOException {
+        log.info("Execute MigrateCollectionsSingletonMap Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(MigrateCollectionsSingletonMap.class));
+    }
+
+    @Tool(name = "migrate_collections_unmodifiable_list", description = "Prefer `List.Of(..)` instead of using `unmodifiableList(java.util.Arrays asList(<args>))` in Java 9 or higher.")
+    public ToolResponse executeMigrateCollectionsUnmodifiableListRecipe() throws IOException {
+        log.info("Execute MigrateCollectionsUnmodifiableList Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(MigrateCollectionsUnmodifiableList.class));
+    }
+
+    @Tool(name = "use_locale_of", description = "Prefer `Locale.of(..)` over `new Locale(..)` in Java 19 or higher.")
+    public ToolResponse executeUseLocaleOfRecipe() throws IOException {
+        log.info("Execute UseLocaleOf Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(UseLocaleOf.class));
+    }
+
+    @Tool(name = "use_enum_set_of", description = "Prefer `EnumSet of(..)` instead of using `Set of(..)` when the arguments are enums in Java 5 or higher.")
+    public ToolResponse executeUseEnumSetOfRecipe() throws IOException {
+        log.info("Execute UseEnumSetOf Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(UseEnumSetOf.class));
+    }
+
+    @Tool(name = "use_map_of", description = "Prefer `Map.of(..)` instead of using `java.util.Map#put(..)` in Java 10 or higher.")
+    public ToolResponse executeUseMapOfRecipe() throws IOException {
+        log.info("Execute UseMapOf Recipe");
+        return executeRecipe(RecipeIntrospectionUtils.constructRecipe(UseMapOf.class));
+    }
+
+    @Tool(name = "list_all_available_openrewrite_recipes", description = "Lists of the available OpenRewrite recipes.")
+    public ToolResponse listAllTheAvailableOpenRewriteRecipes() throws JsonProcessingException {
+        log.info("List All The Available OpenRewrite Recipes");
+        return ToolResponse.success(getRecipeAsJson());
+    }
+
+    private static ToolResponse executeRecipe(Recipe recipe) throws IOException {
         // Create execution context
         ExecutionContext executionContext = new InMemoryExecutionContext(t -> t.printStackTrace());
 
@@ -159,17 +339,8 @@ public class MigrationOpenRewriteMCPServer {
             .logCompilationWarningsAndErrors(true)
             .build();
 
-        // Specify source files to process
-        Path sourceFilePath = Paths.get(ROOT_PATH);
-
-        // Recursively find all Java files in the directory and its subdirectories
-        List<Path> sourcePaths = findJavaFiles(sourceFilePath.toFile());
-
-        // Parse the source files
-        List<SourceFile> sourceFiles = javaParser.parse(sourcePaths, sourceFilePath, executionContext).collect(Collectors.toList());
-
-        // Create and configure the recipe
-        Recipe recipe = RecipeIntrospectionUtils.constructRecipe(StringFormatted.class);
+        // Parse the Java files
+        List<SourceFile> sourceFiles = javaParser.parse(JAVA_FILES, ROOT_PATH, executionContext).collect(Collectors.toList());
 
         // Apply the recipe
         RecipeRun recipeRun = recipe.run(new InMemoryLargeSourceSet(sourceFiles).generate(sourceFiles), executionContext);
@@ -178,20 +349,18 @@ public class MigrationOpenRewriteMCPServer {
         List<Result> results = recipeRun.getChangeset().getAllResults();
         for (Result result : results) {
             // Write the changes back to disk
-            Files.writeString(result.getBefore().getSourcePath(), result.getAfter().printAll());
+            Path absolutePath = ROOT_PATH.resolve(result.getBefore().getSourcePath());
+            Files.writeString(absolutePath, result.getAfter().printAll());
         }
 
-        return ToolResponse.success("Executing " + recipe.getDisplayName() + " made " + results.size() + " changes in the code located in " + ROOT_PATH);
+        if (results.isEmpty()) {
+            return ToolResponse.success("Executing the recipe " + recipe.getDisplayName() + " made no change in the code located in " + ROOT);
+        } else {
+            return ToolResponse.success("Executing the recipe " + recipe.getDisplayName() + " made " + results.size() + " changes in the code located in " + ROOT);
+        }
     }
 
-    @Tool(name = "list_all_available_openrewrite_recipes", description = "Lists of the available OpenRewrite recipes.")
-    public ToolResponse listAllTheAvailableOpenRewriteRecipes() throws JsonProcessingException {
-        log.info("List All The Available OpenRewrite Recipes");
-
-        return ToolResponse.success(getRecipeAsJson());
-    }
-
-    static String getRecipeAsJson() throws JsonProcessingException {
+    String getRecipeAsJson() throws JsonProcessingException {
 
         List<RecipeJson> jsonRecipes = new ArrayList<>();
         for (Class recipeClass : recipesToExpose) {
@@ -229,20 +398,6 @@ public class MigrationOpenRewriteMCPServer {
         }
 
         return result.toString();
-    }
-
-    // Helper method to recursively find all Java files
-    private static List<Path> findJavaFiles(File directory) {
-        log.info("Finding the number of Java files in the directory: " + directory);
-        List<Path> files = new ArrayList<>();
-        if (directory.exists()) {
-            collectJavaFiles(directory, files);
-        } else {
-            System.err.println("Directory does not exist: " + directory);
-        }
-
-        log.info("Found " + files.size() + " Java files in the directory: " + directory);
-        return files;
     }
 
     private static void collectJavaFiles(File directory, List<Path> files) {
