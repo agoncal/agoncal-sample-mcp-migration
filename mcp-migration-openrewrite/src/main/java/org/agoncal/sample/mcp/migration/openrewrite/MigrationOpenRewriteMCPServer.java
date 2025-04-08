@@ -2,7 +2,6 @@ package org.agoncal.sample.mcp.migration.openrewrite;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkiverse.mcp.server.McpLog;
 import io.quarkiverse.mcp.server.Tool;
 import io.quarkiverse.mcp.server.ToolResponse;
 import org.jboss.logging.Logger;
@@ -111,7 +110,7 @@ public class MigrationOpenRewriteMCPServer {
     );
 
     @Tool(name = "url_constructor_to_uri_create", description = "Converts `new URL(String)` constructor to `URI.create(String).toURL()`.")
-    public ToolResponse executeURLConstructorToURICreateRecipe( ) throws IOException {
+    public ToolResponse executeURLConstructorToURICreateRecipe() throws IOException {
         log.info("Execute URLConstructorToURICreate Recipe");
 
         // Create execution context
@@ -149,7 +148,7 @@ public class MigrationOpenRewriteMCPServer {
     }
 
     @Tool(name = "string_formatted", description = "Prefer `String.formatted(Object...)` over `String.format(String, Object...)` in Java 17 or higher.")
-    public ToolResponse executeStringFormattedRecipe(McpLog mcpLog) throws IOException {
+    public ToolResponse executeStringFormattedRecipe() throws IOException {
         log.info("Execute StringFormatted Recipe");
 
         // Create execution context
