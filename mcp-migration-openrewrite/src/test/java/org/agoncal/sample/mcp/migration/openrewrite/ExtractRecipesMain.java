@@ -10,7 +10,7 @@ import org.openrewrite.config.RecipeExample;
 import org.openrewrite.internal.RecipeIntrospectionUtils;
 import org.openrewrite.java.migrate.UpgradeJavaVersion;
 
-public class ExtractRecipes {
+public class ExtractRecipesMain {
 
 
     public static void main(String[] args) throws JsonProcessingException {

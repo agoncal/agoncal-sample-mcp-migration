@@ -111,7 +111,7 @@ public class MigrationOpenRewriteMCPServer {
     );
 
     @Tool(name = "url_constructor_to_uri_create", description = "Converts `new URL(String)` constructor to `URI.create(String).toURL()`.")
-    public ToolResponse executeURLConstructorToURICreateRecipe(McpLog mcpLog) throws IOException {
+    public ToolResponse executeURLConstructorToURICreateRecipe( ) throws IOException {
         log.info("Execute URLConstructorToURICreate Recipe");
 
         // Create execution context
@@ -141,7 +141,8 @@ public class MigrationOpenRewriteMCPServer {
         List<Result> results = recipeRun.getChangeset().getAllResults();
         for (Result result : results) {
             // Write the changes back to disk
-            Files.writeString(result.getBefore().getSourcePath(), result.getAfter().printAll());
+            Path absolutePath = Paths.get(ROOT_PATH).resolve(result.getBefore().getSourcePath());
+            Files.writeString(absolutePath, result.getAfter().printAll());
         }
 
         return ToolResponse.success("Executing " + recipe.getDisplayName() + " made " + results.size() + " changes in the code located in " + ROOT_PATH);
@@ -233,12 +234,15 @@ public class MigrationOpenRewriteMCPServer {
 
     // Helper method to recursively find all Java files
     private static List<Path> findJavaFiles(File directory) {
+        log.info("Finding the number of Java files in the directory: " + directory);
         List<Path> files = new ArrayList<>();
         if (directory.exists()) {
             collectJavaFiles(directory, files);
         } else {
             System.err.println("Directory does not exist: " + directory);
         }
+
+        log.info("Found " + files.size() + " Java files in the directory: " + directory);
         return files;
     }
 
