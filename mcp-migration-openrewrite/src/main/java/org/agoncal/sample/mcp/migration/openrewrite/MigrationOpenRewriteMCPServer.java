@@ -3,8 +3,6 @@ package org.agoncal.sample.mcp.migration.openrewrite;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkiverse.mcp.server.McpLog;
-import io.quarkiverse.mcp.server.Resource;
-import io.quarkiverse.mcp.server.TextResourceContents;
 import io.quarkiverse.mcp.server.Tool;
 import io.quarkiverse.mcp.server.ToolResponse;
 import org.jboss.logging.Logger;
@@ -69,6 +67,7 @@ import java.util.stream.Collectors;
 public class MigrationOpenRewriteMCPServer {
 
     private static final Logger log = Logger.getLogger(MigrationOpenRewriteMCPServer.class);
+    public static final String ROOT_PATH = "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration";
 
     static final List<Class> recipesToExpose = List.of(
         BeansXmlNamespace.class,
@@ -124,7 +123,7 @@ public class MigrationOpenRewriteMCPServer {
             .build();
 
         // Specify source files to process
-        Path sourceFilePath = Paths.get("/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration");
+        Path sourceFilePath = Paths.get(ROOT_PATH);
 
         // Recursively find all Java files in the directory and its subdirectories
         List<Path> sourcePaths = findJavaFiles(sourceFilePath.toFile());
@@ -145,8 +144,7 @@ public class MigrationOpenRewriteMCPServer {
             Files.writeString(result.getBefore().getSourcePath(), result.getAfter().printAll());
         }
 
-        mcpLog.info("Executed " + recipe.getDisplayName() + " and made " + results.size() + " changes");
-        return ToolResponse.success();
+        return ToolResponse.success("Executing " + recipe.getDisplayName() + " made " + results.size() + " changes in the code located in " + ROOT_PATH);
     }
 
     @Tool(name = "string_formatted", description = "Prefer `String.formatted(Object...)` over `String.format(String, Object...)` in Java 17 or higher.")
@@ -162,7 +160,7 @@ public class MigrationOpenRewriteMCPServer {
             .build();
 
         // Specify source files to process
-        Path sourceFilePath = Paths.get("/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration");
+        Path sourceFilePath = Paths.get(ROOT_PATH);
 
         // Recursively find all Java files in the directory and its subdirectories
         List<Path> sourcePaths = findJavaFiles(sourceFilePath.toFile());
@@ -183,19 +181,14 @@ public class MigrationOpenRewriteMCPServer {
             Files.writeString(result.getBefore().getSourcePath(), result.getAfter().printAll());
         }
 
-        mcpLog.info("Executed " + recipe.getDisplayName() + " and made " + results.size() + " changes");
-        return ToolResponse.success();
+        return ToolResponse.success("Executing " + recipe.getDisplayName() + " made " + results.size() + " changes in the code located in " + ROOT_PATH);
     }
 
-    @Resource(name = "lists_all_the_openrewrite_recipes",
-        uri = "file:///Users/agoncal/Documents/recipes.json",
-        mimeType = "application/json",
-        description = "Lists all the available OpenRewrite recipes."
-    )
-    public TextResourceContents dataAllOpenrewriteRecipes() throws JsonProcessingException {
+    @Tool(name = "list_all_available_openrewrite_recipes", description = "Lists of the available OpenRewrite recipes.")
+    public ToolResponse listAllTheAvailableOpenRewriteRecipes() throws JsonProcessingException {
+        log.info("List All The Available OpenRewrite Recipes");
 
-
-        return TextResourceContents.create("file:///Users/agoncal/Documents/recipes.json", getRecipeAsJson());
+        return ToolResponse.success(getRecipeAsJson());
     }
 
     static String getRecipeAsJson() throws JsonProcessingException {
