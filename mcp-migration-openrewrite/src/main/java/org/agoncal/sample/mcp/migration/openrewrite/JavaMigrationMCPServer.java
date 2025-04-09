@@ -67,7 +67,7 @@ import java.util.stream.Collectors;
 public class JavaMigrationMCPServer {
 
     private static final Logger log = Logger.getLogger(JavaMigrationMCPServer.class);
-    private static final String ROOT = "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration/mcp-migration-legacy";
+    private static final String ROOT = "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration/mcp-migration-legacy/src/main/java";
     private static final Path ROOT_PATH = Paths.get(ROOT);
     private static final File ROOT_DIRECTORY = Paths.get(ROOT).toFile();
     private static List<Path> JAVA_FILES;
@@ -343,7 +343,7 @@ public class JavaMigrationMCPServer {
         List<SourceFile> sourceFiles = javaParser.parse(JAVA_FILES, ROOT_PATH, executionContext).collect(Collectors.toList());
 
         // Apply the recipe
-        RecipeRun recipeRun = recipe.run(new InMemoryLargeSourceSet(sourceFiles).generate(sourceFiles), executionContext);
+        RecipeRun recipeRun = recipe.run(new InMemoryLargeSourceSet(sourceFiles), executionContext);
 
         // Process results
         List<Result> results = recipeRun.getChangeset().getAllResults();

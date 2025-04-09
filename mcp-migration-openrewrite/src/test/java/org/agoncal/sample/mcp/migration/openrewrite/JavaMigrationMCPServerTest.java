@@ -28,9 +28,9 @@ public class JavaMigrationMCPServerTest {
     }
 
     @Test
-    public void testexecuteBeansXmlNamespaceRecipe() throws IOException {
+    public void testExecuteURLConstructorToURICreateRecipe() throws IOException {
         ToolResponse result = openRewriteMCPServer.executeURLConstructorToURICreateRecipe();
-        assertTrue(result.content().getFirst().toString().contains("made 4 changes in the code"));
+        assertTrue(result.content().getFirst().toString().contains("made 2 changes in the code"));
     }
 
     @Test
