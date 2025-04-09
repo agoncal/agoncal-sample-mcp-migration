@@ -67,7 +67,7 @@ import java.util.stream.Collectors;
 public class MigrationOpenRewriteMCPServer {
 
     private static final Logger log = Logger.getLogger(MigrationOpenRewriteMCPServer.class);
-    private static final String ROOT = "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration";
+    private static final String ROOT = "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration/mcp-migration-legacy";
     private static final Path ROOT_PATH = Paths.get(ROOT);
     private static final File ROOT_DIRECTORY = Paths.get(ROOT).toFile();
     private static List<Path> JAVA_FILES;
