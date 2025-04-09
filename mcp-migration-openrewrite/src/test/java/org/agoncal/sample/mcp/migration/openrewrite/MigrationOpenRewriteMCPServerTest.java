@@ -28,8 +28,8 @@ public class MigrationOpenRewriteMCPServerTest {
     }
 
     @Test
-    public void testExecuteBeansXmlNamespaceRecipe() throws IOException {
-        ToolResponse result = openRewriteMCPServer.executeBeansXmlNamespaceRecipe();
+    public void testexecuteBeansXmlNamespaceRecipe() throws IOException {
+        ToolResponse result = openRewriteMCPServer.executeURLConstructorToURICreateRecipe();
         assertTrue(result.content().getFirst().toString().contains("made 4 changes in the code"));
     }
 
