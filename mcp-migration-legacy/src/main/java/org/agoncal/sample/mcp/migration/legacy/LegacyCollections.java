@@ -23,4 +23,11 @@ public class LegacyCollections {
         String first = collection.iterator().next();
         return first;
     }
+
+    public void useLegacyMap() {
+        Map<String, String> map = new HashMap<>();
+        map.put("key1", "value");
+        map.put("key2", "value");
+        map.put("key3", "value");
+    }
 }

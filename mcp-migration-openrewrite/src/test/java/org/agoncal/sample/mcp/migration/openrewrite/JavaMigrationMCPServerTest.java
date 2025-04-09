@@ -50,5 +50,11 @@ public class JavaMigrationMCPServerTest {
         ToolResponse result = openRewriteMCPServer.executeRemoveTemporalAnnotationRecipe();
         assertTrue(result.content().getFirst().toString().contains("made no change in the code"));
     }
+
+    @Test
+    public void testUseMapOfRecipeRecipe() throws IOException {
+        ToolResponse result = openRewriteMCPServer.executeUseMapOfRecipe();
+        assertTrue(result.content().getFirst().toString().contains("made 3 changes in the code"));
+    }
 }
 

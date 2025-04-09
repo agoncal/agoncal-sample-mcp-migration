@@ -151,7 +151,7 @@ public class JavaMigrationMCPServer {
         return executeRecipe(RecipeIntrospectionUtils.constructRecipe(CastArraysAsListToList.class));
     }
 
-    @Tool(name = "change_default_key_store", description = "Return String `jks` when  `KeyStore.getDefaultType()` is called. In Java 11 the default keystore was updated from JKS to PKCS12. As a result, applications relying on KeyStore.getDefaultType() may encounter issues after migrating, unless their JKS keystore has been converted to PKCS12. This recipe returns default key store of `jks` when `KeyStore.getDefaultType()` method is called to use the pre Java 11 default keystore.")
+    @Tool(name = "change_default_key_store", description = "Return String `jks` when  `KeyStore.getDefaultType()` is called. In Java 11 the default keystore was updated from JKS to PKCS12. As a result, applications relying on KeyStore.getDefaultType() may encounter issues after migrating, unless their JKS keystore has been converted to PKCS12. This returns default key store of `jks` when `KeyStore.getDefaultType()` method is called to use the pre Java 11 default keystore.")
     public ToolResponse executeChangeDefaultKeyStoreRecipe() throws IOException {
         log.info("Execute ChangeDefaultKeyStore Recipe");
         return executeRecipe(RecipeIntrospectionUtils.constructRecipe(ChangeDefaultKeyStore.class));
@@ -229,7 +229,7 @@ public class JavaMigrationMCPServer {
         return executeRecipe(RecipeIntrospectionUtils.constructRecipe(AddDefaultConstructorToEntityClass.class));
     }
 
-    @Tool(name = "add_jaxws_runtime", description = "Use the latest JAX-WS API and runtime for Jakarta EE 8. Update build files to use the latest JAX-WS runtime from Jakarta EE 8 to maintain compatibility with Java version 11 or greater. The recipe will add a JAX-WS run-time, in Gradle `compileOnly`+`testImplementation` and Maven `provided` scope, to any project that has a transitive dependency on the JAX-WS API. **The resulting dependencies still use the `javax` namespace, despite the move to the Jakarta artifact**.")
+    @Tool(name = "add_jaxws_runtime", description = "Use the latest JAX-WS API and runtime for Jakarta EE 8. Update build files to use the latest JAX-WS runtime from Jakarta EE 8 to maintain compatibility with Java version 11 or greater. The will add a JAX-WS run-time, in Gradle `compileOnly`+`testImplementation` and Maven `provided` scope, to any project that has a transitive dependency on the JAX-WS API. **The resulting dependencies still use the `javax` namespace, despite the move to the Jakarta artifact**.")
     public ToolResponse executeAddJaxwsRuntimeRecipe() throws IOException {
         log.info("Execute AddJaxwsRuntime Recipe");
         return executeRecipe(RecipeIntrospectionUtils.constructRecipe(AddJaxwsRuntime.class));
@@ -356,9 +356,9 @@ public class JavaMigrationMCPServer {
         }
 
         if (results.isEmpty()) {
-            return ToolResponse.success("Executing the recipe " + recipe.getDisplayName() + " made no change in the code located in " + ROOT);
+            return ToolResponse.success("Executing the tool " + recipe.getDisplayName() + " made no change in the code located in " + ROOT);
         } else {
-            return ToolResponse.success("Executing the recipe " + recipe.getDisplayName() + " made " + results.size() + " changes in the code located in " + ROOT);
+            return ToolResponse.success("Executing the tool " + recipe.getDisplayName() + " made " + results.size() + " changes in the code located in " + ROOT);
         }
     }
 
