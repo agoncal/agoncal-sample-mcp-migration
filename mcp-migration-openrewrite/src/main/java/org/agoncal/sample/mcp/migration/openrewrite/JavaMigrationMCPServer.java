@@ -89,7 +89,7 @@ public class JavaMigrationMCPServer {
         executionContext = new InMemoryExecutionContext(t -> t.printStackTrace());
 
         // Forces Java version so we can pick up a different parser
-        System.setProperty("java.version", "11.0.2");
+        //System.setProperty("java.version", "11.0.2");
         log.info("Java Version " + System.getProperty("java.version"));
 
         // Create Java parser
@@ -360,8 +360,10 @@ public class JavaMigrationMCPServer {
         }
 
         if (results.isEmpty()) {
+            log.info("Executing the tool " + recipe.getDisplayName() + " made no change in the code");
             return ToolResponse.success("Executing the tool " + recipe.getDisplayName() + " made no change in the code located in " + ROOT);
         } else {
+            log.info("Executing the tool " + recipe.getDisplayName() + " made " + results.size() + " changes in the code");
             return ToolResponse.success("Executing the tool " + recipe.getDisplayName() + " made " + results.size() + " changes in the code located in " + ROOT);
         }
     }
