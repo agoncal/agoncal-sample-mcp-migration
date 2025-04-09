@@ -1,17 +1,17 @@
-package org.agoncal.sample.mcp.migration.openrewrite;
+package org.agoncal.sample.mcp.migration.legacy;
 
 import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.SequencedCollection;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-public class ToBeUpdated {
+public class LegacyCode {
 
     public static void main(String[] args) throws Exception {
 
@@ -35,7 +35,7 @@ public class ToBeUpdated {
         String decodedURL = URLDecoder.decode("http://www.google.com");
 
         // Should be updated by the IteratorNext recipe
-        SequencedCollection collection = new ConcurrentLinkedDeque();
+        Collection collection = new ConcurrentLinkedDeque();
         collection.iterator().next();
 
         // Should be updated by the ListFirstAndLast recipe
@@ -45,7 +45,7 @@ public class ToBeUpdated {
         // Should be updated by the MigrateCollectionsSingletonList recipe
         List<String> list2 = Collections.singletonList("Hello");
 
-        ToBeUpdated me = new ToBeUpdated();
+        LegacyCode me = new LegacyCode();
         me.getResume();
     }
 
