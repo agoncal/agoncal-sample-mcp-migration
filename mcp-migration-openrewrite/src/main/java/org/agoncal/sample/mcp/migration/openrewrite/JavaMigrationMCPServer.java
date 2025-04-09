@@ -64,9 +64,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MigrationOpenRewriteMCPServer {
+public class JavaMigrationMCPServer {
 
-    private static final Logger log = Logger.getLogger(MigrationOpenRewriteMCPServer.class);
+    private static final Logger log = Logger.getLogger(JavaMigrationMCPServer.class);
     private static final String ROOT = "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration/mcp-migration-legacy";
     private static final Path ROOT_PATH = Paths.get(ROOT);
     private static final File ROOT_DIRECTORY = Paths.get(ROOT).toFile();
@@ -324,9 +324,9 @@ public class MigrationOpenRewriteMCPServer {
         return executeRecipe(RecipeIntrospectionUtils.constructRecipe(UseMapOf.class));
     }
 
-    @Tool(name = "list_all_available_openrewrite_recipes", description = "Lists of the available OpenRewrite recipes.")
-    public ToolResponse listAllTheAvailableOpenRewriteRecipes() throws JsonProcessingException {
-        log.info("List All The Available OpenRewrite Recipes");
+    @Tool(name = "list_all_available_java_migration_tools", description = "Lists of the available Java migration tools.")
+    public ToolResponse listAllTheAvailableJavaMigrationTools() throws JsonProcessingException {
+        log.info("List All The Available Java Migration Tools");
         return ToolResponse.success(getRecipeAsJson());
     }
 

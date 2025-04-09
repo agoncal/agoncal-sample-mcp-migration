@@ -92,6 +92,6 @@ public class ExtractRecipesMain {
     }
 
     private static void recipeToJson() throws JsonProcessingException {
-        System.out.println(new MigrationOpenRewriteMCPServer().getRecipeAsJson());
+        System.out.println(new JavaMigrationMCPServer().getRecipeAsJson());
     }
 }

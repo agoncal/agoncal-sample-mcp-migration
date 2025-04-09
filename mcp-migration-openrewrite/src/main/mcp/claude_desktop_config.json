@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "java_migration-openrewrite_recipes": {
+    "java_migration": {
       "command": "/Users/agoncal/.sdkman/candidates/java/23.0.1-tem/bin/java",
       "args": [
         "-jar",

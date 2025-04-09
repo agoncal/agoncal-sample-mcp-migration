@@ -12,10 +12,10 @@ import jakarta.inject.Inject;
 import java.io.IOException;
 
 @QuarkusTest
-public class MigrationOpenRewriteMCPServerTest {
+public class JavaMigrationMCPServerTest {
 
     @Inject
-    MigrationOpenRewriteMCPServer openRewriteMCPServer;
+    JavaMigrationMCPServer openRewriteMCPServer;
 
     @Test
     public void testGetRecipeAsJson() throws JsonProcessingException {
