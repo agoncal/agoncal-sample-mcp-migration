@@ -5,6 +5,7 @@ import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkus.test.junit.QuarkusTest;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 import jakarta.inject.Inject;
@@ -27,12 +28,21 @@ public class MigrationOpenRewriteMCPServerTest {
     }
 
     @Test
-    public void testExecuteURLConstructorToURICreateRecipe() throws IOException {
-        // When
-        ToolResponse result = openRewriteMCPServer.executeURLConstructorToURICreateRecipe();
+    public void testExecuteBeansXmlNamespaceRecipe() throws IOException {
+        ToolResponse result = openRewriteMCPServer.executeBeansXmlNamespaceRecipe();
+        assertTrue(result.content().getFirst().toString().contains("made 4 changes in the code"));
+    }
 
-        // Then
-        assertNotNull(result, "The JSON string should not be null");
+    @Test
+    public void testExecuteCastArraysAsListToListRecipe() throws IOException {
+        ToolResponse result = openRewriteMCPServer.executeCastArraysAsListToListRecipe();
+        assertTrue(result.content().getFirst().toString().contains("made 2 changes in the code"));
+    }
+
+    @Test
+    public void testExecuteThreadStopUnsupportedRecipe() throws IOException {
+        ToolResponse result = openRewriteMCPServer.executeThreadStopUnsupportedRecipe();
+        assertTrue(result.content().getFirst().toString().contains("made 2 changes in the code"));
     }
 }
 
