@@ -19,6 +19,7 @@
     <skipITs>true</skipITs>
     <surefire-plugin.version>3.5.2</surefire-plugin.version>
     <quarkus-mcp-server.version>1.0.0</quarkus-mcp-server.version>
+    <openrewrite.version>3.5.0</openrewrite.version>
   </properties>
 
   <dependencyManagement>
@@ -27,7 +28,7 @@
       <dependency>
         <groupId>org.openrewrite.recipe</groupId>
         <artifactId>rewrite-recipe-bom</artifactId>
-        <version>3.5.0</version>
+        <version>${openrewrite.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>

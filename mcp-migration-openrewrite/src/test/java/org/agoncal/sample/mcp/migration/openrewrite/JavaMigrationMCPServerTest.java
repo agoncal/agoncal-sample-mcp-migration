@@ -46,9 +46,9 @@ public class JavaMigrationMCPServerTest {
     }
 
     @Test
-    public void testExecuteIteratorNextRecipe() throws IOException {
-        ToolResponse result = openRewriteMCPServer.executeIteratorNextRecipe();
-        assertTrue(result.content().getFirst().toString().contains("made 1 changes in the code"));
+    public void testRemoveTemporalAnnotationRecipe() throws IOException {
+        ToolResponse result = openRewriteMCPServer.executeRemoveTemporalAnnotationRecipe();
+        assertTrue(result.content().getFirst().toString().contains("made 2 changes in the code"));
     }
 }
 

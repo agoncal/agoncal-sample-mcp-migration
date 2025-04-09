@@ -12,7 +12,22 @@
     <maven.compiler.release>11</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <openrewrite.version>3.5.0</openrewrite.version>
+    <openrewrite-maven-plugin.version>6.4.0</openrewrite-maven-plugin.version>
   </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- OpenRewrite -->
+      <dependency>
+        <groupId>org.openrewrite.recipe</groupId>
+        <artifactId>rewrite-recipe-bom</artifactId>
+        <version>${openrewrite.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
@@ -26,5 +41,54 @@
       <version>3.1.0</version>
       <scope>provided</scope>
     </dependency>
+    <!-- OpenRewrite -->
+    <dependency>
+      <groupId>org.openrewrite</groupId>
+      <artifactId>rewrite-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.openrewrite.recipe</groupId>
+      <artifactId>rewrite-migrate-java</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.openrewrite</groupId>
+      <artifactId>rewrite-java</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.openrewrite</groupId>
+      <artifactId>rewrite-java-17</artifactId>
+    </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.openrewrite.maven</groupId>
+        <artifactId>rewrite-maven-plugin</artifactId>
+        <version>${openrewrite-maven-plugin.version}</version>
+        <configuration>
+          <activeRecipes>
+            <recipe>org.openrewrite.java.migrate.javax.RemoveTemporalAnnotation</recipe>
+          </activeRecipes>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.openrewrite.recipe</groupId>
+            <artifactId>rewrite-migrate-java</artifactId>
+            <version>${openrewrite.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.openrewrite</groupId>
+            <artifactId>rewrite-java</artifactId>
+            <version>8.49.0</version>
+          </dependency>
+          <dependency>
+            <groupId>org.openrewrite</groupId>
+            <artifactId>rewrite-java-17</artifactId>
+            <version>8.49.0</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+    </plugins>
+  </build>
 </project>
