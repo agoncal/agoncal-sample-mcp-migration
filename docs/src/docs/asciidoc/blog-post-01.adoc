@@ -170,7 +170,7 @@ Make sure to replace `<full path>` with the actual path to your JAR files.
   "servers": {
     "azure-mgt-resources": {
       "type": "stdio",
-      "command": "~/.sdkman/candidates/java/23.0.1-tem/bin/java",
+      "command": "~/.sdkman/candidates/java/21.0.2-tem/bin/java",
       "args": [
         "-jar",
         "<full path>/target/mcp-server-azure-resourcemanager-resources-runner.jar"
@@ -178,7 +178,7 @@ Make sure to replace `<full path>` with the actual path to your JAR files.
     },
     "azure-mgt-storage": {
       "type": "stdio",
-      "command": "/Users/agoncal/.sdkman/candidates/java/23.0.1-tem/bin/java",
+      "command": "/Users/agoncal/.sdkman/candidates/java/21.0.2-tem/bin/java",
       "args": [
         "-jar",
         "<full path>/target/mcp-server-azure-resourcemanager-storage-runner.jar"
