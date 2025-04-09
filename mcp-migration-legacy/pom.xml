@@ -41,23 +41,6 @@
       <version>3.1.0</version>
       <scope>provided</scope>
     </dependency>
-    <!-- OpenRewrite -->
-    <dependency>
-      <groupId>org.openrewrite</groupId>
-      <artifactId>rewrite-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.openrewrite.recipe</groupId>
-      <artifactId>rewrite-migrate-java</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.openrewrite</groupId>
-      <artifactId>rewrite-java</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.openrewrite</groupId>
-      <artifactId>rewrite-java-17</artifactId>
-    </dependency>
   </dependencies>
 
   <build>
@@ -68,7 +51,44 @@
         <version>${openrewrite-maven-plugin.version}</version>
         <configuration>
           <activeRecipes>
+            <recipe>org.openrewrite.java.migrate.BeansXmlNamespace</recipe>
+            <recipe>org.openrewrite.java.migrate.CastArraysAsListToList</recipe>
+            <recipe>org.openrewrite.java.migrate.ChangeDefaultKeyStore</recipe>
+            <recipe>org.openrewrite.java.migrate.IllegalArgumentExceptionToAlreadyConnectedException</recipe>
+            <recipe>org.openrewrite.java.migrate.JREThrowableFinalMethods</recipe>
+            <recipe>org.openrewrite.java.migrate.RemovedSecurityManagerMethods</recipe>
+            <recipe>org.openrewrite.java.migrate.ReplaceComSunAWTUtilitiesMethods</recipe>
+<!--            <recipe>org.openrewrite.java.migrate.UpgradeJavaVersion</recipe> causes  Cannot invoke "java.lang.Integer.intValue()" because "v" is null -->
+            <recipe>org.openrewrite.java.migrate.UseJavaUtilBase64</recipe>
+            <recipe>org.openrewrite.java.migrate.io.ReplaceFileInOrOutputStreamFinalizeWithClose</recipe>
+            <recipe>org.openrewrite.java.migrate.jakarta.ApplicationPathWildcardNoLongerAccepted</recipe>
+            <recipe>org.openrewrite.java.migrate.jakarta.RemoveBeanIsNullable</recipe>
+<!--            <recipe>org.openrewrite.java.migrate.jakarta.UpdateAnnotationAttributeJavaxToJakarta</recipe> String.lenth()-->
+            <recipe>org.openrewrite.java.migrate.jakarta.UpdateBeanManagerMethods</recipe>
+            <recipe>org.openrewrite.java.migrate.jakarta.UpdateGetRealPath</recipe>
+            <recipe>org.openrewrite.java.migrate.javax.AddColumnAnnotation</recipe>
+            <recipe>org.openrewrite.java.migrate.javax.AddDefaultConstructorToEntityClass</recipe>
+            <recipe>org.openrewrite.java.migrate.javax.AddJaxwsRuntime</recipe>
             <recipe>org.openrewrite.java.migrate.javax.RemoveTemporalAnnotation</recipe>
+            <recipe>org.openrewrite.java.migrate.lang.StringFormatted</recipe>
+            <recipe>org.openrewrite.java.migrate.lang.ThreadStopUnsupported</recipe>
+            <recipe>org.openrewrite.java.migrate.lang.UseStringIsEmptyRecipe</recipe>
+            <recipe>org.openrewrite.java.migrate.lang.UseTextBlocks</recipe>
+            <recipe>org.openrewrite.java.migrate.logging.MigrateLogRecordSetMillisToSetInstant</recipe>
+            <recipe>org.openrewrite.java.migrate.logging.MigrateLoggerGlobalToGetGlobal</recipe>
+            <recipe>org.openrewrite.java.migrate.net.MigrateURLDecoderDecode</recipe>
+            <recipe>org.openrewrite.java.migrate.net.MigrateURLEncoderEncode</recipe>
+            <recipe>org.openrewrite.java.migrate.net.URLConstructorToURICreate</recipe>
+            <recipe>org.openrewrite.java.migrate.net.URLConstructorsToNewURI</recipe>
+            <recipe>org.openrewrite.java.migrate.sql.MigrateDriverManagerSetLogStream</recipe>
+            <recipe>org.openrewrite.java.migrate.util.IteratorNext</recipe>
+            <recipe>org.openrewrite.java.migrate.util.ListFirstAndLast</recipe>
+            <recipe>org.openrewrite.java.migrate.util.MigrateCollectionsSingletonList</recipe>
+            <recipe>org.openrewrite.java.migrate.util.MigrateCollectionsSingletonMap</recipe>
+            <recipe>org.openrewrite.java.migrate.util.MigrateCollectionsUnmodifiableList</recipe>
+            <recipe>org.openrewrite.java.migrate.util.UseEnumSetOf</recipe>
+            <recipe>org.openrewrite.java.migrate.util.UseLocaleOf</recipe>
+            <recipe>org.openrewrite.java.migrate.util.UseMapOf</recipe>
           </activeRecipes>
         </configuration>
         <dependencies>
