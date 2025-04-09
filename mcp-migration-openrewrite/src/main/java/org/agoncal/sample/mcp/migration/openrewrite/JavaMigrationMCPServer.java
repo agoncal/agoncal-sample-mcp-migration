@@ -71,6 +71,8 @@ public class JavaMigrationMCPServer {
     private static final Path ROOT_PATH = Paths.get(ROOT);
     private static final File ROOT_DIRECTORY = Paths.get(ROOT).toFile();
     private static List<Path> JAVA_FILES;
+    private static ExecutionContext executionContext;
+    private static List<SourceFile> sourceFiles;
 
     @PostConstruct
     void findJavaFiles() {
@@ -81,8 +83,19 @@ public class JavaMigrationMCPServer {
         } else {
             System.err.println("Directory does not exist: " + ROOT_DIRECTORY);
         }
-
         log.info("Found " + JAVA_FILES.size() + " Java files in the directory: " + ROOT_DIRECTORY);
+
+        // Create execution context
+        executionContext = new InMemoryExecutionContext(t -> t.printStackTrace());
+
+        // Create Java parser
+        JavaParser javaParser = JavaParser.fromJavaVersion()
+            .logCompilationWarningsAndErrors(true)
+            .build();
+
+        // Parse the Java files
+        sourceFiles = javaParser.parse(JAVA_FILES, ROOT_PATH, executionContext).collect(Collectors.toList());
+        log.info("Parsed " + sourceFiles.size() + " Java files in the root path: " + ROOT_PATH);
     }
 
     static final List<Class> recipesToExpose = List.of(
@@ -331,17 +344,6 @@ public class JavaMigrationMCPServer {
     }
 
     private static ToolResponse executeRecipe(Recipe recipe) throws IOException {
-        // Create execution context
-        ExecutionContext executionContext = new InMemoryExecutionContext(t -> t.printStackTrace());
-
-        // Create Java parser
-        JavaParser javaParser = JavaParser.fromJavaVersion()
-            .logCompilationWarningsAndErrors(true)
-            .build();
-
-        // Parse the Java files
-        List<SourceFile> sourceFiles = javaParser.parse(JAVA_FILES, ROOT_PATH, executionContext).collect(Collectors.toList());
-
         // Apply the recipe
         RecipeRun recipeRun = recipe.run(new InMemoryLargeSourceSet(sourceFiles), executionContext);
 
