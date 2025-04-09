@@ -88,6 +88,10 @@ public class JavaMigrationMCPServer {
         // Create execution context
         executionContext = new InMemoryExecutionContext(t -> t.printStackTrace());
 
+        // Forces Java version so we can pick up a different parser
+        System.setProperty("java.version", "11.0.2");
+        log.info("Java Version " + System.getProperty("java.version"));
+
         // Create Java parser
         JavaParser javaParser = JavaParser.fromJavaVersion()
             .logCompilationWarningsAndErrors(true)

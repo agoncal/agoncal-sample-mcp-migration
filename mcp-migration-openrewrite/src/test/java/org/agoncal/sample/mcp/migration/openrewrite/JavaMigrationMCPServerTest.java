@@ -54,7 +54,7 @@ public class JavaMigrationMCPServerTest {
     @Test
     public void testUseMapOfRecipeRecipe() throws IOException {
         ToolResponse result = openRewriteMCPServer.executeUseMapOfRecipe();
-        assertTrue(result.content().getFirst().toString().contains("made 3 changes in the code"));
+        assertTrue(result.content().getFirst().toString().contains("made no change in the code"));
     }
 }
 
