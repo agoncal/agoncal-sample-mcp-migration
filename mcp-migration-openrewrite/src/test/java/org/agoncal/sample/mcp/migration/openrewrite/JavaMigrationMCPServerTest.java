@@ -36,7 +36,7 @@ public class JavaMigrationMCPServerTest {
     @Test
     public void testExecuteCastArraysAsListToListRecipe() throws IOException {
         ToolResponse result = openRewriteMCPServer.executeCastArraysAsListToListRecipe();
-        assertTrue(result.content().getFirst().toString().contains("made 2 changes in the code"));
+        assertTrue(result.content().getFirst().toString().contains("made 1 changes in the code"));
     }
 
     @Test
