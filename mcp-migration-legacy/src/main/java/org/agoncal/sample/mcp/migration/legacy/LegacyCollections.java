@@ -1,5 +1,6 @@
 package org.agoncal.sample.mcp.migration.legacy;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -15,5 +16,11 @@ public class LegacyCollections {
         System.out.println("Singleton List: " + singletonList);
         System.out.println("Singleton Map: " + singletonMap);
         System.out.println("Unmodifiable Map: " + unmodifiableMap);
+    }
+
+    public String useLegacyIterator() {
+        Collection<String> collection = Collections.singletonList("single");
+        String first = collection.iterator().next();
+        return first;
     }
 }

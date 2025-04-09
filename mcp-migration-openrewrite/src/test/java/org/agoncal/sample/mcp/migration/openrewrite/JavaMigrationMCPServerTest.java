@@ -44,5 +44,11 @@ public class JavaMigrationMCPServerTest {
         ToolResponse result = openRewriteMCPServer.executeThreadStopUnsupportedRecipe();
         assertTrue(result.content().getFirst().toString().contains("made 2 changes in the code"));
     }
+
+    @Test
+    public void testExecuteIteratorNextRecipe() throws IOException {
+        ToolResponse result = openRewriteMCPServer.executeIteratorNextRecipe();
+        assertTrue(result.content().getFirst().toString().contains("made 1 changes in the code"));
+    }
 }
 
