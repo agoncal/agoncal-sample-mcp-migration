@@ -67,7 +67,8 @@ import java.util.stream.Collectors;
 public class JavaMigrationMCPServer {
 
     private static final Logger log = Logger.getLogger(JavaMigrationMCPServer.class);
-    private static final String ROOT = "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration/mcp-migration-legacy/src/main/java";
+        private static final String ROOT = "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration/mcp-migration-legacy/src/main/java";
+//    private static final String ROOT = "/Users/agoncal/Documents/Code/Temp/mcp-migration-legacy/src/main/java";
     private static final Path ROOT_PATH = Paths.get(ROOT);
     private static final File ROOT_DIRECTORY = Paths.get(ROOT).toFile();
     private static List<Path> JAVA_FILES;
@@ -343,7 +344,7 @@ public class JavaMigrationMCPServer {
 
     @Tool(name = "list_all_available_java_migration_tools", description = "Lists of the available Java migration tools.")
     public ToolResponse listAllTheAvailableJavaMigrationTools() throws JsonProcessingException {
-        log.info("List All The Available Java Migration Tools");
+        log.info("List all the " + recipesToExpose.size() + " available Java Migration Tools");
         return ToolResponse.success(getRecipeAsJson());
     }
 
@@ -368,7 +369,396 @@ public class JavaMigrationMCPServer {
         }
     }
 
-    String getRecipeAsJson() throws JsonProcessingException {
+    String getRecipeAsJson() {
+        return """
+            [
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.BeansXmlNamespace",
+                "name": "beans_xml_namespace",
+                "displayName": "Change `beans.xml` `schemaLocation` to match XML namespace",
+                "description": "Set the `schemaLocation` that corresponds to the `xmlns` set in `beans.xml` files.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.CastArraysAsListToList",
+                "name": "cast_arrays_as_list_to_list",
+                "displayName": "Remove explicit casts on `Arrays.asList(..).toArray()`",
+                "description": "Convert code like `(Integer[]) Arrays.asList(1, 2, 3).toArray()` to `Arrays.asList(1, 2, 3).toArray(new Integer[0])`.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.ChangeDefaultKeyStore",
+                "name": "change_default_key_store",
+                "displayName": "Return String `jks` when  `KeyStore.getDefaultType()` is called",
+                "description": "In Java 11 the default keystore was updated from JKS to PKCS12. As a result, applications relying on KeyStore.getDefaultType() may encounter issues after migrating, unless their JKS keystore has been converted to PKCS12. This tool returns default key store of `jks` when `KeyStore.getDefaultType()` method is called to use the pre Java 11 default keystore.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.IllegalArgumentExceptionToAlreadyConnectedException",
+                "name": "illegal_argument_exception_to_already_connected_exception",
+                "displayName": "Replace `IllegalArgumentException` with `AlreadyConnectedException` in `DatagramChannel.send()` method",
+                "description": "Replace `IllegalArgumentException` with `AlreadyConnectedException` for DatagramChannel.send() to ensure compatibility with Java 11+.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.JREThrowableFinalMethods",
+                "name": "j_r_e_throwable_final_methods",
+                "displayName": "Rename final method declarations `getSuppressed()` and `addSuppressed(Throwable exception)` in classes that extend `Throwable`",
+                "description": "The tool renames  `getSuppressed()` and `addSuppressed(Throwable exception)` methods  in classes that extend `java.lang.Throwable` to `myGetSuppressed` and `myAddSuppressed(Throwable)`.These methods were added to Throwable in Java 7 and are marked final which cannot be overridden.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.RemovedSecurityManagerMethods",
+                "name": "removed_security_manager_methods",
+                "displayName": "Replace deprecated methods in`SecurityManager`",
+                "description": "Replace `SecurityManager` methods `checkAwtEventQueueAccess()`, `checkSystemClipboardAccess()`, `checkMemberAccess()` and `checkTopLevelWindow()` deprecated in Java SE 11 by `checkPermission(new java.security.AllPermission())`.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.ReplaceComSunAWTUtilitiesMethods",
+                "name": "replace_com_sun_a_w_t_utilities_methods",
+                "displayName": "Replace `com.sun.awt.AWTUtilities` static method invocations",
+                "description": "This tool replaces several static calls  in `com.sun.awt.AWTUtilities` with the JavaSE 11 equivalent. The methods replaced are `AWTUtilities.isTranslucencySupported()`, `AWTUtilities.setWindowOpacity()`, `AWTUtilities.getWindowOpacity()`, `AWTUtilities.getWindowShape()`, `AWTUtilities.isWindowOpaque()`, `AWTUtilities.isTranslucencyCapable()` and `AWTUtilities.setComponentMixingCutoutShape()`.",
+                "options": [
+                  {
+                    "name": "get_a_w_t_is_windows_translucency_pattern",
+                    "displayName": "Method pattern to replace",
+                    "description": "The method pattern to match and replace.",
+                    "type": "String"
+                  },
+                  {
+                    "name": "is_window_opaque_pattern",
+                    "displayName": "Method pattern to replace",
+                    "description": "The method pattern to match and replace.",
+                    "type": "String"
+                  },
+                  {
+                    "name": "is_translucency_capable_pattern",
+                    "displayName": "Method pattern to replace",
+                    "description": "The method pattern to match and replace.",
+                    "type": "String"
+                  },
+                  {
+                    "name": "set_window_opacity_pattern",
+                    "displayName": "Method pattern to replace",
+                    "description": "The method pattern to match and replace.",
+                    "type": "String"
+                  },
+                  {
+                    "name": "get_window_opacity_pattern",
+                    "displayName": "Method pattern to replace",
+                    "description": "The method pattern to match and replace.",
+                    "type": "String"
+                  },
+                  {
+                    "name": "get_window_shape_pattern",
+                    "displayName": "Method pattern to replace",
+                    "description": "The method pattern to match and replace.",
+                    "type": "String"
+                  },
+                  {
+                    "name": "set_component_mixing_cutout_shape_pattern",
+                    "displayName": "Method pattern to replace",
+                    "description": "The method pattern to match and replace.",
+                    "type": "String"
+                  }
+                ]
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.UpgradeJavaVersion",
+                "name": "upgrade_java_version",
+                "displayName": "Upgrade Java version",
+                "description": "Upgrade build plugin configuration to use the specified Java version. This tool changes `java.toolchain.languageVersion` in `build.gradle(.kts)` of gradle projects, or maven-compiler-plugin target version and related settings. Will not downgrade if the version is newer than the specified version.",
+                "options": [
+                  {
+                    "name": "version",
+                    "displayName": "Java version",
+                    "description": "The Java version to upgrade to.",
+                    "type": "Integer"
+                  }
+                ]
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.UseJavaUtilBase64",
+                "name": "use_java_util_base64",
+                "displayName": "Prefer `java.util.Base64` instead of `sun.misc`",
+                "description": "Prefer `java.util.Base64` instead of using `sun.misc` in Java 8 or higher. `sun.misc` is not exported by the Java module system and accessing this class will result in a warning in Java 11 and an error in Java 17.",
+                "options": [
+                  {
+                    "name": "use_mime_coder",
+                    "displayName": "Use Mime Coder",
+                    "description": "Use `Base64.getMimeEncoder()/getMimeDecoder()` instead of `Base64.getEncoder()/getDecoder()`.",
+                    "type": "boolean"
+                  }
+                ]
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.lang.ThreadStopUnsupported",
+                "name": "thread_stop_unsupported",
+                "displayName": "Replace `Thread.resume()`, `Thread.stop()`, and `Thread.suspend()` with `throw new UnsupportedOperationException()`",
+                "description": "`Thread.resume()`, `Thread.stop()`, and `Thread.suspend()` always throws a `new UnsupportedOperationException` in Java 21+. This tool makes that explicit, as the migration is more complicated.See https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/doc-files/threadPrimitiveDeprecation.html .",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.io.ReplaceFileInOrOutputStreamFinalizeWithClose",
+                "name": "replace_file_in_or_output_stream_finalize_with_close",
+                "displayName": "Replace invocations of `finalize()` on `FileInputStream` and `FileOutputStream` with `close()`",
+                "description": "Replace invocations of the deprecated `finalize()` method on `FileInputStream` and `FileOutputStream` with `close()`.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.jakarta.ApplicationPathWildcardNoLongerAccepted",
+                "name": "application_path_wildcard_no_longer_accepted",
+                "displayName": "Remove trailing slash from `jakarta.ws.rs.ApplicationPath` values",
+                "description": "Remove trailing `/*` from `jakarta.ws.rs.ApplicationPath` values.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.jakarta.RemoveBeanIsNullable",
+                "name": "remove_bean_is_nullable",
+                "displayName": "Remove `Bean.isNullable()`",
+                "description": "`Bean.isNullable()` has been removed in CDI 4.0.0, and now always returns `false`.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.jakarta.UpdateAnnotationAttributeJavaxToJakarta",
+                "name": "update_annotation_attribute_javax_to_jakarta",
+                "displayName": "Update annotation attributes using `javax` to `jakarta`",
+                "description": "Replace `javax` with `jakarta` in annotation attributes for matching annotation signatures.",
+                "options": [
+                  {
+                    "name": "signature",
+                    "displayName": "Annotation signature",
+                    "description": "An annotation signature to match.",
+                    "type": "String"
+                  }
+                ]
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.jakarta.UpdateBeanManagerMethods",
+                "name": "update_bean_manager_methods",
+                "displayName": "Update `fireEvent()` and `createInjectionTarget()` calls",
+                "description": " Updates `BeanManager.fireEvent()` or `BeanManager.createInjectionTarget()`.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.jakarta.UpdateGetRealPath",
+                "name": "update_get_real_path",
+                "displayName": "Updates `getRealPath()` to call `getContext()` followed by `getRealPath()`",
+                "description": "Updates `getRealPath()` for `jakarta.servlet.ServletRequest` and `jakarta.servlet.ServletRequestWrapper` to use `ServletContext.getRealPath(String)`.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.javax.AddColumnAnnotation",
+                "name": "add_column_annotation",
+                "displayName": "`@ElementCollection` annotations must be accompanied by a defined `@Column` annotation",
+                "description": "When an attribute is annotated with `@ElementCollection`, a separate table is created for the attribute that includes the attribute \\nID and value. In OpenJPA, the column for the annotated attribute is named element, whereas EclipseLink names the column based on \\nthe name of the attribute. To remain compatible with tables that were created with OpenJPA, add a `@Column` annotation with the name \\nattribute set to element.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.net.URLConstructorToURICreate",
+                "name": "u_r_l_constructor_to_u_r_i_create",
+                "displayName": "Convert `new URL(String)` to `URI.create(String).toURL()`",
+                "description": "Converts `new URL(String)` constructor to `URI.create(String).toURL()`.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.javax.AddDefaultConstructorToEntityClass",
+                "name": "add_default_constructor_to_entity_class",
+                "displayName": "`@Entity` objects with constructors must also have a default constructor",
+                "description": "When a Java Persistence API (JPA) entity class has a constructor with arguments, the class must also have a default, no-argument constructor. The OpenJPA implementation automatically generates the no-argument constructor, but the EclipseLink implementation does not.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.javax.AddJaxwsRuntime",
+                "name": "add_jaxws_runtime",
+                "displayName": "Use the latest JAX-WS API and runtime for Jakarta EE 8",
+                "description": "Update build files to use the latest JAX-WS runtime from Jakarta EE 8 to maintain compatibility with Java version 11 or greater. The tool will add a JAX-WS run-time, in Gradle `compileOnly`+`testImplementation` and Maven `provided` scope, to any project that has a transitive dependency on the JAX-WS API. **The resulting dependencies still use the `javax` namespace, despite the move to the Jakarta artifact**.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.javax.RemoveTemporalAnnotation",
+                "name": "remove_temporal_annotation",
+                "displayName": "Remove the `@Temporal` annotation for some `java.sql` attributes",
+                "description": "OpenJPA persists the fields of attributes of type `java.sql.Date`, `java.sql.Time`, or `java.sql.Timestamp` that have a `javax.persistence.Temporal` annotation, whereas EclipseLink throws an exception. Remove the `@Temporal` annotation so the behavior in EclipseLink will match the behavior in OpenJPA.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.lang.StringFormatted",
+                "name": "string_formatted",
+                "displayName": "Prefer `String.formatted(Object...)`",
+                "description": "Prefer `String.formatted(Object...)` over `String.format(String, Object...)` in Java 17 or higher.",
+                "options": [
+                  {
+                    "name": "add_parentheses",
+                    "displayName": "Add parentheses around the first argument",
+                    "description": "Add parentheses around the first argument if it is not a simple expression. Default true; if false no change will be made. ",
+                    "type": "Boolean"
+                  }
+                ]
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.lang.UseStringIsEmptyRecipe",
+                "name": "use_string_is_empty",
+                "displayName": "Replace `0 < s.length()` with `!s.isEmpty()`",
+                "description": "Replace `0 < s.length()` and `s.length() != 0` with `!s.isEmpty()`.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.lang.UseTextBlocks",
+                "name": "use_text_blocks",
+                "displayName": "Use text blocks",
+                "description": "Text blocks are easier to read than concatenated strings.",
+                "options": [
+                  {
+                    "name": "convert_strings_without_newlines",
+                    "displayName": "Whether to convert strings without newlines (the default value is true).",
+                    "description": "Whether or not strings without newlines should be converted to text block when processing code. The default value is true.",
+                    "type": "boolean"
+                  }
+                ]
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.logging.MigrateLoggerGlobalToGetGlobal",
+                "name": "migrate_logger_global_to_get_global",
+                "displayName": "Use `Logger#getGlobal()`",
+                "description": "The preferred way to get the global logger object is via the call `Logger#getGlobal()` over direct field access to `java.util.logging.Logger.global`.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.logging.MigrateLogRecordSetMillisToSetInstant",
+                "name": "migrate_log_record_set_millis_to_set_instant",
+                "displayName": "Use `LogRecord#setInstant(Instant)`",
+                "description": "Use `LogRecord#setInstant(Instant)` instead of the deprecated `LogRecord#setMillis(long)` in Java 9 or higher.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.net.MigrateURLDecoderDecode",
+                "name": "migrate_u_r_l_decoder_decode",
+                "displayName": "Use `java.net.URLDecoder#decode(String, StandardCharsets.UTF_8)`",
+                "description": "Use `java.net.URLDecoder#decode(String, StandardCharsets.UTF_8)` instead of the deprecated `java.net.URLDecoder#decode(String)` in Java 10 or higher.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.net.MigrateURLEncoderEncode",
+                "name": "migrate_u_r_l_encoder_encode",
+                "displayName": "Use `java.net.URLEncoder#encode(String, StandardCharsets.UTF_8)`",
+                "description": "Use `java.net.URLEncoder#encode(String, StandardCharsets.UTF_8)` instead of the deprecated `java.net.URLEncoder#encode(String)` in Java 10 or higher.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.net.URLConstructorsToNewURI",
+                "name": "u_r_l_constructors_to_new_u_r_i",
+                "displayName": "Convert `new URL(String, ..)` to `new URI(String, ..).toURL()`",
+                "description": "Converts `new URL(String, ..)` constructors to `new URI(String, ..).toURL()`.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.sql.MigrateDriverManagerSetLogStream",
+                "name": "migrate_driver_manager_set_log_stream",
+                "displayName": "Use `DriverManager#setLogWriter(java.io.PrintWriter)`",
+                "description": "Use `DriverManager#setLogWriter(java.io.PrintWriter)` instead of the deprecated `DriverManager#setLogStream(java.io.PrintStream)` in Java 1.2 or higher.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.util.IteratorNext",
+                "name": "iterator_next",
+                "displayName": "Replace `iterator().next()` with `getFirst()`",
+                "description": "Replace `SequencedCollection.iterator().next()` with `getFirst()`.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.util.ListFirstAndLast",
+                "name": "list_first_and_last",
+                "displayName": "Replace `List.get(int)`, `add(int, Object)`, and `remove(int)` with `SequencedCollection` `*First` and `*Last` methods",
+                "description": "Replace `list.get(0)` with `list.getFirst()`, `list.get(list.size() - 1)` with `list.getLast()`, and similar for `add(int, E)` and `remove(int)`.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.util.MigrateCollectionsSingletonList",
+                "name": "migrate_collections_singleton_list",
+                "displayName": "Prefer `List.of(..)`",
+                "description": "Prefer `List.of(..)` instead of using `Collections.singletonList()` in Java 9 or higher.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.util.MigrateCollectionsSingletonMap",
+                "name": "migrate_collections_singleton_map",
+                "displayName": "Prefer `Map.of(..)`",
+                "description": "Prefer `Map.Of(..)` instead of using `Collections.singletonMap()` in Java 9 or higher.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.util.MigrateCollectionsUnmodifiableList",
+                "name": "migrate_collections_unmodifiable_list",
+                "displayName": "Prefer `List.of(..)`",
+                "description": "Prefer `List.Of(..)` instead of using `unmodifiableList(java.util.Arrays asList(<args>))` in Java 9 or higher.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.util.UseEnumSetOf",
+                "name": "use_enum_set_of",
+                "displayName": "Prefer `EnumSet of(..)`",
+                "description": "Prefer `EnumSet of(..)` instead of using `Set of(..)` when the arguments are enums in Java 5 or higher.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.util.UseLocaleOf",
+                "name": "use_locale_of",
+                "displayName": "Prefer `Locale.of(..)` over `new Locale(..)`",
+                "description": "Prefer `Locale.of(..)` over `new Locale(..)` in Java 19 or higher.",
+                "options": []
+              },
+              {
+                "migration": "Java Migration",
+                "fqn": "org.openrewrite.java.migrate.util.UseMapOf",
+                "name": "use_map_of",
+                "displayName": "Prefer `Map.of(..)`",
+                "description": "Prefer `Map.of(..)` instead of using `java.util.Map#put(..)` in Java 10 or higher.",
+                "options": []
+              }
+            ]
+            """;
+    }
+
+    String getRecipeJson() throws JsonProcessingException {
 
         List<RecipeJson> jsonRecipes = new ArrayList<>();
         for (Class recipeClass : recipesToExpose) {
