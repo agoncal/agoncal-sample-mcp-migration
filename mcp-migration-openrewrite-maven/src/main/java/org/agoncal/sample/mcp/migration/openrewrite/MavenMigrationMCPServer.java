@@ -53,37 +53,31 @@ import java.util.stream.Collectors;
 public class MavenMigrationMCPServer {
 
     private static final Logger log = Logger.getLogger(MavenMigrationMCPServer.class);
-    private static final String ROOT = "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration/mcp-migration-legacy/src/main/java";
-    //    private static final String ROOT = "/Users/agoncal/Documents/Code/Temp/mcp-migration-legacy/src/main/java";
-    private static final Path ROOT_PATH = Paths.get(ROOT);
-    private static final File ROOT_DIRECTORY = Paths.get(ROOT).toFile();
-    private static List<Path> POM_XML_FILES;
+    private static final String ROOT_APP_TO_MIGRATE = System.getenv("ROOT_APP_TO_MIGRATE");
+    private static final Path ROOT_PATH = Paths.get(ROOT_APP_TO_MIGRATE);
+    private static final File ROOT_DIRECTORY = Paths.get(ROOT_APP_TO_MIGRATE).toFile();
     private static ExecutionContext executionContext;
     private static List<SourceFile> sourceFiles;
 
     @PostConstruct
     void findPomXMLFiles() {
-        log.info("Finding the number of pom.xml files in the directory: " + ROOT);
-        POM_XML_FILES = new ArrayList<>();
+        log.info("Finding the number of pom.xml files in the directory: " + ROOT_APP_TO_MIGRATE);
+        List<Path> pomXmlFiles = new ArrayList<>();
         if (ROOT_DIRECTORY.exists()) {
-            collectPomXMLFiles(ROOT_DIRECTORY, POM_XML_FILES);
+            collectPomXMLFiles(ROOT_DIRECTORY, pomXmlFiles);
         } else {
             System.err.println("Directory does not exist: " + ROOT_DIRECTORY);
         }
-        log.info("Found " + POM_XML_FILES.size() + " pom.xml files in the directory: " + ROOT_DIRECTORY);
+        log.info("Found " + pomXmlFiles.size() + " pom.xml files in the directory: " + ROOT_DIRECTORY);
 
         // Create execution context
         executionContext = new InMemoryExecutionContext(t -> t.printStackTrace());
-
-        // Forces Java version so we can pick up a different parser
-        //System.setProperty("java.version", "11.0.2");
-        log.info("Java Version " + System.getProperty("java.version"));
 
         // Create Maven parser
         MavenParser mavenParser = MavenParser.builder().build();
 
         // Parse the POM XML files
-        sourceFiles = mavenParser.parse(POM_XML_FILES, ROOT_PATH, executionContext).collect(Collectors.toList());
+        sourceFiles = mavenParser.parse(pomXmlFiles, ROOT_PATH, executionContext).collect(Collectors.toList());
         log.info("Parsed " + sourceFiles.size() + " pom.xml files in the root path: " + ROOT_PATH);
     }
 
@@ -130,10 +124,9 @@ public class MavenMigrationMCPServer {
         @ToolArg(name = "Group ID", description = "The first part of a dependency coordinate `com.google.guava:guava:VERSION`.") String groupId,
         @ToolArg(name = "Artifact ID", description = "The second part of a dependency coordinate `com.google.guava:guava:VERSION`.") String artifactId,
         @ToolArg(name = "Version", description = "An exact version number or node-style semver selector used to select the version number.") String version,
-        @ToolArg(name = "Scope", description = "A scope to use when it is not what can be inferred from usage. Most of the time this will be left empty, but is used when adding a runtime, provided, or import dependency.", required = false) String scope,
-        @ToolArg(name = "Optional", description = "Set the value of the `<optional>` tag. No `<optional>` tag will be added when this is `null`.", required = false) boolean optional) throws IOException {
-        log.info("Execute AddDependency Recipe");
-        AddDependency addDependency = new AddDependency(groupId, artifactId, version, null, scope, null, null, null, null, optional, null, null);
+        @ToolArg(name = "Scope", description = "A scope to use when it is not what can be inferred from usage. Most of the time this will be left empty, but is used when adding a runtime, provided, or import dependency.", required = false) String scope) throws IOException {
+        log.infov("Execute AddDependency Recipe ({0}, {1}, {2}, {3})", groupId, artifactId, version, scope);
+        AddDependency addDependency = new AddDependency(groupId, artifactId, version, null, scope, null, null, null, null, null, null, null);
         return executeRecipe(addDependency);
     }
 
@@ -151,10 +144,10 @@ public class MavenMigrationMCPServer {
 
         if (results.isEmpty()) {
             log.info("Executing the tool " + recipe.getDisplayName() + " made no change in the code");
-            return ToolResponse.success("Executing the tool " + recipe.getDisplayName() + " made no change in the code located in " + ROOT);
+            return ToolResponse.success("Executing the tool " + recipe.getDisplayName() + " made no change in the code located in " + ROOT_APP_TO_MIGRATE);
         } else {
             log.info("Executing the tool " + recipe.getDisplayName() + " made " + results.size() + " changes in the code");
-            return ToolResponse.success("Executing the tool " + recipe.getDisplayName() + " made " + results.size() + " changes in the code located in " + ROOT);
+            return ToolResponse.success("Executing the tool " + recipe.getDisplayName() + " made " + results.size() + " changes in the code located in " + ROOT_APP_TO_MIGRATE);
         }
     }
 

@@ -67,24 +67,22 @@ import java.util.stream.Collectors;
 public class JavaMigrationMCPServer {
 
     private static final Logger log = Logger.getLogger(JavaMigrationMCPServer.class);
-        private static final String ROOT = "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration/mcp-migration-legacy/src/main/java";
-//    private static final String ROOT = "/Users/agoncal/Documents/Code/Temp/mcp-migration-legacy/src/main/java";
-    private static final Path ROOT_PATH = Paths.get(ROOT);
-    private static final File ROOT_DIRECTORY = Paths.get(ROOT).toFile();
-    private static List<Path> JAVA_FILES;
+    private static final String ROOT_APP_TO_MIGRATE = System.getenv("ROOT_APP_TO_MIGRATE");
+    private static final Path ROOT_PATH = Paths.get(ROOT_APP_TO_MIGRATE);
+    private static final File ROOT_DIRECTORY = Paths.get(ROOT_APP_TO_MIGRATE).toFile();
     private static ExecutionContext executionContext;
     private static List<SourceFile> sourceFiles;
 
     @PostConstruct
     void findJavaFiles() {
-        log.info("Finding the number of Java files in the directory: " + ROOT);
-        JAVA_FILES = new ArrayList<>();
+        log.info("Finding the number of Java files in the directory: " + ROOT_APP_TO_MIGRATE);
+        List<Path> javaFiles = new ArrayList<>();
         if (ROOT_DIRECTORY.exists()) {
-            collectJavaFiles(ROOT_DIRECTORY, JAVA_FILES);
+            collectJavaFiles(ROOT_DIRECTORY, javaFiles);
         } else {
             System.err.println("Directory does not exist: " + ROOT_DIRECTORY);
         }
-        log.info("Found " + JAVA_FILES.size() + " Java files in the directory: " + ROOT_DIRECTORY);
+        log.info("Found " + javaFiles.size() + " Java files in the directory: " + ROOT_DIRECTORY);
 
         // Create execution context
         executionContext = new InMemoryExecutionContext(t -> t.printStackTrace());
@@ -99,7 +97,7 @@ public class JavaMigrationMCPServer {
             .build();
 
         // Parse the Java files
-        sourceFiles = javaParser.parse(JAVA_FILES, ROOT_PATH, executionContext).collect(Collectors.toList());
+        sourceFiles = javaParser.parse(javaFiles, ROOT_PATH, executionContext).collect(Collectors.toList());
         log.info("Parsed " + sourceFiles.size() + " Java files in the root path: " + ROOT_PATH);
     }
 
@@ -362,10 +360,10 @@ public class JavaMigrationMCPServer {
 
         if (results.isEmpty()) {
             log.info("Executing the tool " + recipe.getDisplayName() + " made no change in the code");
-            return ToolResponse.success("Executing the tool " + recipe.getDisplayName() + " made no change in the code located in " + ROOT);
+            return ToolResponse.success("Executing the tool " + recipe.getDisplayName() + " made no change in the code located in " + ROOT_APP_TO_MIGRATE);
         } else {
             log.info("Executing the tool " + recipe.getDisplayName() + " made " + results.size() + " changes in the code");
-            return ToolResponse.success("Executing the tool " + recipe.getDisplayName() + " made " + results.size() + " changes in the code located in " + ROOT);
+            return ToolResponse.success("Executing the tool " + recipe.getDisplayName() + " made " + results.size() + " changes in the code located in " + ROOT_APP_TO_MIGRATE);
         }
     }
 
