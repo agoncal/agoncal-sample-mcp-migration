@@ -12,7 +12,7 @@
     <maven.compiler.release>11</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <openrewrite.version>3.5.0</openrewrite.version>
+    <openrewrite.version>3.7.0</openrewrite.version>
     <openrewrite-maven-plugin.version>6.4.0</openrewrite-maven-plugin.version>
   </properties>
 

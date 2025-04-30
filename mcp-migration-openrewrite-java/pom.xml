@@ -4,25 +4,36 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.agoncal.sample.mcp.migration</groupId>
-  <artifactId>mcp-migration-appcat</artifactId>
+  <artifactId>mcp-migration-openrewrite-java</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  <name>MCP Migration :: AppCAT</name>
+  <name>MCP Migration :: OpenRewrite Java</name>
 
   <properties>
     <compiler-plugin.version>3.13.0</compiler-plugin.version>
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <skipITs>true</skipITs>
+    <surefire-plugin.version>3.5.2</surefire-plugin.version>
+    <!-- Quarkus -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <quarkus.platform.version>3.21.4</quarkus.platform.version>
-    <skipITs>true</skipITs>
-    <surefire-plugin.version>3.5.2</surefire-plugin.version>
     <quarkus-mcp-server.version>1.0.0</quarkus-mcp-server.version>
+    <!-- OpenRewrite -->
+    <openrewrite.version>3.7.0</openrewrite.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
+      <!-- OpenRewrite -->
+      <dependency>
+        <groupId>org.openrewrite.recipe</groupId>
+        <artifactId>rewrite-recipe-bom</artifactId>
+        <version>${openrewrite.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <!-- Quarkus -->
       <dependency>
         <groupId>${quarkus.platform.group-id}</groupId>
@@ -35,22 +46,63 @@
   </dependencyManagement>
 
   <dependencies>
+    <!-- OpenRewrite -->
+    <dependency>
+      <groupId>org.openrewrite</groupId>
+      <artifactId>rewrite-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.openrewrite</groupId>
+      <artifactId>rewrite-java</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.openrewrite</groupId>
+      <artifactId>rewrite-java-11</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.openrewrite.recipe</groupId>
+      <artifactId>rewrite-migrate-java</artifactId>
+    </dependency>
     <!-- Quarkus -->
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-arc</artifactId>
     </dependency>
     <!-- MCP -->
-    <dependency>
-      <groupId>io.quarkiverse.mcp</groupId>
-      <artifactId>quarkus-mcp-server-stdio</artifactId>
-      <version>${quarkus-mcp-server.version}</version>
-    </dependency>
+        <dependency>
+          <groupId>io.quarkiverse.mcp</groupId>
+          <artifactId>quarkus-mcp-server-stdio</artifactId>
+          <version>${quarkus-mcp-server.version}</version>
+        </dependency>
 <!--    <dependency>-->
 <!--      <groupId>io.quarkiverse.mcp</groupId>-->
 <!--      <artifactId>quarkus-mcp-server-sse</artifactId>-->
 <!--      <version>${quarkus-mcp-server.version}</version>-->
 <!--    </dependency>-->
+    <!-- Java EE -->
+    <dependency>
+      <groupId>javax.persistence</groupId>
+      <artifactId>javax.persistence-api</artifactId>
+      <version>2.2</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>3.1.0</version>
+      <scope>provided</scope>
+    </dependency>
+    <!-- Testing -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-junit5</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.rest-assured</groupId>
+      <artifactId>rest-assured</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "java_migration": {
+      "type": "stdio",
+      "command": "/Users/agoncal/.sdkman/candidates/java/21.0.2-tem/bin/java",
+      "args": [
+        "-jar",
+        "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration/mcp-migration-openrewrite/target/mcp-migration-openrewrite-1.0.0-SNAPSHOT-runner.jar"
+      ]
+    }
+  }
+}

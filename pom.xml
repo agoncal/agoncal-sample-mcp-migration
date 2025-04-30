@@ -12,7 +12,8 @@
     <module>mcp-migration-appcat</module>
     <module>mcp-migration-azure</module>
     <module>mcp-migration-legacy</module>
-    <module>mcp-migration-openrewrite</module>
+    <module>mcp-migration-openrewrite-java</module>
+    <module>mcp-migration-openrewrite-maven</module>
   </modules>
 
   <profiles>

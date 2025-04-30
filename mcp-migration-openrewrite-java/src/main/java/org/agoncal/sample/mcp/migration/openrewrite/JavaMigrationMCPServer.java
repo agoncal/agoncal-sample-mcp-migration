@@ -144,6 +144,12 @@ public class JavaMigrationMCPServer {
         UseMapOf.class
     );
 
+    @Tool(name = "list_all_available_java_migration_tools", description = "Lists of the available Java migration tools.")
+    public ToolResponse listAllTheAvailableJavaMigrationTools() throws JsonProcessingException {
+        log.info("List all the " + recipesToExpose.size() + " available Java Migration Tools");
+        return ToolResponse.success(getRecipeAsJson());
+    }
+
     @Tool(name = "beans_xml_namespace", description = "Change `beans.xml` `schemaLocation` to match XML namespace. Set the `schemaLocation` that corresponds to the `xmlns` set in `beans.xml` files.")
     public ToolResponse executeBeansXmlNamespaceRecipe() throws IOException {
         log.info("Execute BeansXmlNamespace Recipe");
@@ -340,12 +346,6 @@ public class JavaMigrationMCPServer {
     public ToolResponse executeUseMapOfRecipe() throws IOException {
         log.info("Execute UseMapOf Recipe");
         return executeRecipe(RecipeIntrospectionUtils.constructRecipe(UseMapOf.class));
-    }
-
-    @Tool(name = "list_all_available_java_migration_tools", description = "Lists of the available Java migration tools.")
-    public ToolResponse listAllTheAvailableJavaMigrationTools() throws JsonProcessingException {
-        log.info("List all the " + recipesToExpose.size() + " available Java Migration Tools");
-        return ToolResponse.success(getRecipeAsJson());
     }
 
     private static ToolResponse executeRecipe(Recipe recipe) throws IOException {
@@ -810,12 +810,5 @@ public class JavaMigrationMCPServer {
             }
         }
     }
-}
-
-record RecipeJson(String migration, String fqn, String name, String displayName, String description,
-                  List<OptionJson> options) {
-}
-
-record OptionJson(String name, String displayName, String description, String type) {
 }
 

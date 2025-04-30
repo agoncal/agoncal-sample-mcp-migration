@@ -19,7 +19,7 @@ public class LegacyCode1 {
     }
 
     public void useDeprecatedArraysAsList() {
-        Integer[] array = (Integer[]) Arrays.asList(1, 2, 3).toArray();
+        Integer[] array = Arrays.asList(1, 2, 3).toArray(new Integer[0]);
         logger.info("Array: " + Arrays.toString(array));
     }
 }
