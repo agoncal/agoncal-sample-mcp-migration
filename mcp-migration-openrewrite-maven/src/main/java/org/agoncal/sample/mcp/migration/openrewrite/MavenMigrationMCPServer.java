@@ -130,6 +130,50 @@ public class MavenMigrationMCPServer {
         return executeRecipe(addDependency);
     }
 
+    @Tool(name = "add_managed_dependency", description = "Add a managed Maven dependency to a `pom.xml` file.")
+    public ToolResponse executeAddManagedDependency(
+        @ToolArg(name = "Group ID", description = "The first part of a dependency coordinate 'org.apache.logging.log4j:ARTIFACT_ID:VERSION'.") String groupId,
+        @ToolArg(name = "Artifact ID", description = "The second part of a dependency coordinate 'org.apache.logging.log4j:log4j-bom:VERSION'.") String artifactId,
+        @ToolArg(name = "Version", description = "An exact version number or node-style semver selector used to select the version number.") String version) throws IOException {
+        log.infov("Execute AddManagedDependency Recipe ({0}, {1}, {2})", groupId, artifactId, version);
+        AddManagedDependency addManagedDependency = new AddManagedDependency(groupId, artifactId, version, "import", "pom", null, null, null, null, null);
+        return executeRecipe(addManagedDependency);
+    }
+
+    @Tool(name = "add_parent_pom", description = "Add a parent pom to a Maven pom.xml. Does nothing if a parent pom is already present.")
+    public ToolResponse executeAddParentPom(
+        @ToolArg(name = "Group ID", description = "The group ID of the maven parent pom to be adopted.") String groupId,
+        @ToolArg(name = "Artifact ID", description = "The artifact ID of the maven parent pom to be adopted.") String artifactId,
+        @ToolArg(name = "Version", description = "An exact version number or node-style semver selector used to select the version number.") String version) throws IOException {
+        log.infov("Execute AddManagedDependency Recipe ({0}, {1}, {2})", groupId, artifactId, version);
+        AddParentPom addParentPom = new AddParentPom(groupId, artifactId, version, null, null);
+        return executeRecipe(addParentPom);
+    }
+
+    @Tool(name = "add_plugin", description = "Add the specified Maven plugin to the pom.xml.")
+    public ToolResponse executeAddPlugin(
+        @ToolArg(name = "Group ID", description = "The first part of a dependency coordinate 'org.openrewrite.maven:rewrite-maven-plugin:VERSION'.") String groupId,
+        @ToolArg(name = "Artifact ID", description = "The second part of a dependency coordinate 'org.openrewrite.maven:rewrite-maven-plugin:VERSION'.") String artifactId,
+        @ToolArg(name = "Version", description = "A fixed version of the plugin to add.") String version,
+        @ToolArg(name = "Configuration", description = "Optional plugin configuration provided as raw XML") String configuration,
+        @ToolArg(name = "Dependencies", description = "Optional plugin dependencies provided as raw XML.") String dependencies,
+        @ToolArg(name = "Executions", description = "Optional executions provided as raw XML.") String executions) throws IOException {
+        log.infov("Execute AddManagedDependency Recipe ({0}, {1}, {2}, {3}, {4}, {5})", groupId, artifactId, version, configuration, dependencies, executions);
+        AddPlugin addPlugin = new AddPlugin(groupId, artifactId, version, configuration, dependencies, executions, null);
+        return executeRecipe(addPlugin);
+    }
+
+    @Tool(name = "add_property", description = "Add a new property to the Maven project property. Prefers to add the property to the parent if the project has multiple modules.")
+    public ToolResponse executeAddPropertyRecipe(
+        @ToolArg(name = "Key", description = "The name of the property key to be added.") String key,
+        @ToolArg(name = "Value", description = "The value of property to be added.") String value,
+        @ToolArg(name = "Version", description = "An exact version number or node-style semver selector used to select the version number.") String version,
+        @ToolArg(name = "Scope", description = "A scope to use when it is not what can be inferred from usage. Most of the time this will be left empty, but is used when adding a runtime, provided, or import dependency.", required = false) String scope) throws IOException {
+        log.infov("Execute AddProperty Recipe ({0}, {1}, {2}, {3})", key, value, false, false);
+        AddProperty addProperty = new AddProperty(key, value, false, false);
+        return executeRecipe(addProperty);
+    }
+
     private static ToolResponse executeRecipe(Recipe recipe) throws IOException {
         // Apply the recipe
         RecipeRun recipeRun = recipe.run(new InMemoryLargeSourceSet(sourceFiles), executionContext);
@@ -184,13 +228,7 @@ public class MavenMigrationMCPServer {
                     "displayName": "Scope",
                     "description": "A scope to use when it is not what can be inferred from usage. Most of the time this will be left empty, but is used when adding a runtime, provided, or import dependency.",
                     "type": "String"
-                  },
-                  {
-                    "name": "optional",
-                    "displayName": "Optional",
-                    "description": "Set the value of the `<optional>` tag. No `<optional>` tag will be added when this is `null`.",
-                    "type": "Boolean"
-                  },
+                  }
                 ]
               },
               {
@@ -217,48 +255,6 @@ public class MavenMigrationMCPServer {
                     "displayName": "Version",
                     "description": "An exact version number or node-style semver selector used to select the version number.",
                     "type": "String"
-                  },
-                  {
-                    "name": "scope",
-                    "displayName": "Scope",
-                    "description": "An optional scope to use for the dependency management tag.",
-                    "type": "String"
-                  },
-                  {
-                    "name": "type",
-                    "displayName": "Type",
-                    "description": "An optional type to use for the dependency management tag.",
-                    "type": "String"
-                  },
-                  {
-                    "name": "classifier",
-                    "displayName": "Classifier",
-                    "description": "An optional classifier to use for the dependency management tag",
-                    "type": "String"
-                  },
-                  {
-                    "name": "version_pattern",
-                    "displayName": "Version pattern",
-                    "description": "Allows version selection to be extended beyond the original Node Semver semantics. So for example,Setting 'version' to \\"25-29\\" can be paired with a metadata pattern of \\"-jre\\" to select 29.0-jre",
-                    "type": "String"
-                  },
-                  {
-                    "name": "releases_only",
-                    "displayName": "Releases only",
-                    "description": "Whether to exclude snapshots from consideration when using a semver selector",
-                    "type": "Boolean"
-                  },
-                  {
-                    "name": "only_if_using",
-                    "displayName": "Only if using glob expression for group:artifact",
-                    "description": "Only add managed dependencies to projects having a dependency matching the expression.",
-                    "type": "String"
-                  },
-                  {
-                    "name": "add_to_root_pom",
-                    "displayName": "Add to the root pom",
-                    "description": "Add to the root pom where root is the eldest parent of the pom within the source set.",
-                    "type": "Boolean"
                   }
                 ]
               },
@@ -285,18 +281,6 @@ public class MavenMigrationMCPServer {
                     "name": "version",
                     "displayName": "Version",
                     "description": "An exact version number or node-style semver selector used to select the version number.",
-                    "type": "String"
-                  },
-                  {
-                    "name": "relative_path",
-                    "displayName": "Relative path",
-                    "description": "New relative path attribute for parent lookup.",
-                    "type": "String"
-                  },
-                  {
-                    "name": "version_pattern",
-                    "displayName": "Version pattern",
-                    "description": "Allows version selection to be extended beyond the original Node Semver semantics. So for example,Setting 'version' to \\"25-29\\" can be paired with a metadata pattern of \\"-jre\\" to select Guava 29.0-jre",
                     "type": "String"
                   }
                 ]
@@ -342,12 +326,6 @@ public class MavenMigrationMCPServer {
                     "name": "executions",
                     "displayName": "Executions",
                     "description": "Optional executions provided as raw XML.",
-                    "type": "String"
-                  },
-                  {
-                    "name": "file_pattern",
-                    "displayName": "File pattern",
-                    "description": "A glob expression that can be used to constrain which directories or source files should be searched. Multiple patterns may be specified, separated by a semicolon `;`. If multiple patterns are supplied any of the patterns matching will be interpreted as a match. When not set, all source files are searched. ",
                     "type": "String"
                   }
                 ]
@@ -409,18 +387,6 @@ public class MavenMigrationMCPServer {
                     "displayName": "Value",
                     "description": "The value of property to be added.",
                     "type": "String"
-                  },
-                  {
-                    "name": "preserve_existing_value",
-                    "displayName": "Preserve existing value",
-                    "description": "Preserve previous value if the property already exists in the pom file.",
-                    "type": "Boolean"
-                  },
-                  {
-                    "name": "trust_parent",
-                    "displayName": "Trust parent POM",
-                    "description": "If the parent defines a property with the same key, trust it even if the value isn't the same. Useful when you want to wait for the parent to have its value changed first. The parent is not trusted by default.",
-                    "type": "Boolean"
                   }
                 ]
               },
