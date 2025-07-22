@@ -67,6 +67,9 @@ public class PomXmlTest {
                 System.out.println("Property: " + key + " = " + value);
             });
 
+
+            System.out.println("\n=== WRITING MODEL");
+            System.out.println("==================");
             MavenXpp3Writer writer = new MavenXpp3Writer();
             try (OutputStream outputStream = Files.newOutputStream(pomPath)) {
                 writer.write(outputStream, model);
