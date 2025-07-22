@@ -16,6 +16,9 @@ import java.nio.file.Paths;
 public class PomXmlTest {
 
     public static void main(String[] args) throws IOException, XmlPullParserException {
+
+        new MavenPomXmlMCPServer().getAllProperties();
+
         Path pomPath = Paths.get("mcp-maven-pomxml/src/test/resources/pomee6.xml").toAbsolutePath();
 
         InputStream inputStream = Files.newInputStream(pomPath);

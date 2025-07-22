@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "maven_migration": {
+    "maven_pom_xml": {
       "command": "/Users/agoncal/.sdkman/candidates/java/21.0.7-tem/bin/java",
       "args": [
         "-jar",

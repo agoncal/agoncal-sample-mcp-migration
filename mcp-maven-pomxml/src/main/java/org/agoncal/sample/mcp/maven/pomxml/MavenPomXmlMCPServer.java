@@ -20,12 +20,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class MavenPomXmlMCPServer {
 
     private static final Logger log = Logger.getLogger(MavenPomXmlMCPServer.class);
-    private static final Path POM_XML_PATH = Paths.get(System.getenv("POM_XML_PATH")).toAbsolutePath();
+    private static final String DEFAULT_POM_XML_PATH = "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration/mcp-maven-pomxml/src/test/resources/pomee6.xml";
+    private static final Path POM_XML_PATH = Paths.get(
+        Optional.ofNullable(System.getenv("POM_XML_PATH")).orElse(DEFAULT_POM_XML_PATH)
+    ).toAbsolutePath();
     private static final MavenXpp3Reader reader = new MavenXpp3Reader();
     private static final MavenXpp3Writer writer = new MavenXpp3Writer();
 
