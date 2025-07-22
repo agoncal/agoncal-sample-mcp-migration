@@ -78,10 +78,72 @@ public class MavenPomXmlMCPServer {
         log.info("adds the new property " + key + " with value" + value);
 
         Model model = readModel();
+
+        if (model.getProperties().containsKey(key)) {
+            return ToolResponse.error("Property '" + key + "' already exist in the pom.xml file.");
+        }
+
         model.addProperty(key, value);
         writeModel(model);
 
-        return ToolResponse.success();
+        return ToolResponse.success("The new property " + key + " has been added with value " + value);
+    }
+
+    @Tool(name = "updates_the_value_of_an_existing_property", description = """
+        This method modifies the value of an existing property in a Maven pom.xml file. This method takes a property key (name) and a new value as parameters, locates the specified property within the <properties> section of the POM file, and updates its value while preserving all other properties and the XML structure. The method only updates existing properties and does not create new ones if the specified key is not found.
+
+        Example usage:
+        - Input: property key "java.version", new value "17"
+        - Before: <java.version>11</java.version>
+        - After: <java.version>17</java.version>
+
+        The method handles XML parsing, property location, value replacement, and file writing operations automatically. If the specified property key does not exist in the pom.xml, the method typically returns an error or indication that the property was not found, without modifying the file.
+        """)
+    public ToolResponse updateExistingPropertyValue(
+        @ToolArg(name = "property key", description = "The name of the property key to look for.") String key,
+        @ToolArg(name = "property value", description = "The new value of the existing property.") String value)
+        throws IOException, XmlPullParserException {
+        log.info("updates the existing property " + key + " with the new value" + value);
+
+        Model model = readModel();
+
+        if (!model.getProperties().containsKey(key)) {
+            return ToolResponse.error("Property '" + key + "' does not exist in the pom.xml file.");
+        }
+
+        model.getProperties().put(key, value);
+
+        writeModel(model);
+
+        return ToolResponse.success("The value of the existing property " + key + " has been updated to " + value);
+    }
+
+    @Tool(name = "removes_an_existing_property", description = """
+        This method deletes an existing property from a Maven pom.xml file. This method takes a property key (name) as a parameter, locates the specified property within the <properties> section of the POM file, and removes it entirely while preserving all other properties and the XML structure. The method only removes existing properties and does not modify the file if the specified key is not found.
+
+        Example usage:
+        - Input: property key "java.version"
+        - Before: <properties><java.version>11</java.version><maven.compiler.source>11</maven.compiler.source></properties>
+        - After: <properties><maven.compiler.source>11</maven.compiler.source></properties>
+
+        The method handles XML parsing, property location, element removal, and file writing operations automatically. If the specified property key does not exist in the pom.xml, the method typically returns an error or indication that the property was not found, without modifying the file. If removing the property results in an empty <properties> section, the implementation may choose to either keep the empty section or remove it entirely.
+        """)
+    public ToolResponse removeExistingProperty(
+        @ToolArg(name = "property key", description = "The name of the property key to remove.") String key)
+        throws IOException, XmlPullParserException {
+        log.info("remove the existing property " + key);
+
+        Model model = readModel();
+
+        if (!model.getProperties().containsKey(key)) {
+            return ToolResponse.error("Property '" + key + "' does not exist in the pom.xml file.");
+        }
+
+        model.getProperties().remove(key);
+
+        writeModel(model);
+
+        return ToolResponse.success("The existing property " + key + " has been removed");
     }
 
     private static Model readModel() throws IOException, XmlPullParserException {
