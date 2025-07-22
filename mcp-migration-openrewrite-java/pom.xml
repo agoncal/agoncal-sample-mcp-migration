@@ -11,7 +11,7 @@
   <groupId>org.agoncal.sample.mcp.migration</groupId>
   <artifactId>mcp-migration-openrewrite-java</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  <name>MCP Migration :: OpenRewrite Java</name>
+  <name>MCP :: Migration :: OpenRewrite Java</name>
 
   <dependencies>
     <!-- OpenRewrite -->

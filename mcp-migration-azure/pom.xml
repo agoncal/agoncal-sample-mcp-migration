@@ -11,7 +11,7 @@
   <groupId>org.agoncal.sample.mcp.migration</groupId>
   <artifactId>mcp-migration-azure</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  <name>MCP Migration :: Azure</name>
+  <name>MCP :: Migration :: Azure</name>
 
   <dependencies>
     <!-- Quarkus -->

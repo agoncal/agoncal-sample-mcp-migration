@@ -6,9 +6,10 @@
   <artifactId>parent</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>MCP Migration</name>
+  <name>MCP</name>
 
   <modules>
+    <module>mcp-maven-pomxml</module>
     <module>mcp-migration-appcat</module>
     <module>mcp-migration-azure</module>
     <module>mcp-migration-legacy</module>

@@ -8,21 +8,12 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <groupId>org.agoncal.sample.mcp.migration</groupId>
-  <artifactId>mcp-migration-openrewrite-maven</artifactId>
+  <groupId>org.agoncal.sample.mcp.maven</groupId>
+  <artifactId>mcp-maven-pomxml</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  <name>MCP :: Migration :: OpenRewrite Maven</name>
+  <name>MCP :: Maven :: POM.XML</name>
 
   <dependencies>
-    <!-- OpenRewrite -->
-    <dependency>
-      <groupId>org.openrewrite</groupId>
-      <artifactId>rewrite-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.openrewrite</groupId>
-      <artifactId>rewrite-maven</artifactId>
-    </dependency>
     <!-- Quarkus -->
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -39,18 +30,12 @@
     <!--      <artifactId>quarkus-mcp-server-sse</artifactId>-->
     <!--      <version>${quarkus-mcp-server.version}</version>-->
     <!--    </dependency>-->
-    <!-- Java EE -->
+    <!-- Maven -->
+    <!-- https://mvnrepository.com/artifact/org.apache.maven/maven-model -->
     <dependency>
-      <groupId>javax.persistence</groupId>
-      <artifactId>javax.persistence-api</artifactId>
-      <version>2.2</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
-      <version>3.1.0</version>
-      <scope>provided</scope>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-model</artifactId>
+      <version>3.9.11</version>
     </dependency>
     <!-- Testing -->
     <dependency>
