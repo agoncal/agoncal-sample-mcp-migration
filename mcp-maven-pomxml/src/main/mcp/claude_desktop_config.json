@@ -4,10 +4,10 @@
       "command": "/Users/agoncal/.sdkman/candidates/java/21.0.7-tem/bin/java",
       "args": [
         "-jar",
-        "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration/mcp-migration-openrewrite-maven/target/mcp-migration-openrewrite-maven-1.0.0-SNAPSHOT-runner.jar"
+        "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration/mcp-maven-pomxml/target/mcp-maven-pomxml-1.0.0-SNAPSHOT-runner.jar"
       ],
       "env": {
-        "ROOT_APP_TO_MIGRATE": "/Users/agoncal/Documents/Code/Temp/mcp-migration-legacy"
+        "POM_XML_PATH": "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration/mcp-maven-pomxml/src/test/resources/pomee6.xml"
       }
     }
   }
