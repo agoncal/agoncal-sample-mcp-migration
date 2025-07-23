@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.quarkiverse.mcp.server.Tool;
+import io.quarkiverse.mcp.server.Tool.Annotations;
 import io.quarkiverse.mcp.server.ToolArg;
 import io.quarkiverse.mcp.server.ToolResponse;
 import jakarta.annotation.PostConstruct;
@@ -52,7 +53,8 @@ public class MavenPomXmlMCPServer {
         - Output: Collection containing: {"groupId": "jakarta.platform", "artifactId": "jakarta.jakartaee-api", "version": "${version.jakarta.ee}", "scope": "provided"}
 
         The method handles XML parsing automatically and returns an empty collection if no <dependencies> section exists in the pom.xml file. It reads the file without modifying it.
-        """)
+        """,
+        annotations = @Annotations(title = "gets all the dependencies", readOnlyHint = true, destructiveHint = false, idempotentHint = false))
     public ToolResponse getAllDependencies() throws IOException, XmlPullParserException {
         log.info("gets all the dependencies");
 
@@ -85,7 +87,8 @@ public class MavenPomXmlMCPServer {
         - Output: Collection containing: {"groupId": "jakarta.platform", "artifactId": "jakarta.jakartaee-api", "version": "${version.jakarta.ee}", "scope": "provided"}
 
         The method handles XML parsing automatically and returns an empty collection if no <dependencies> section exists in the pom.xml file. It reads the file without modifying it.
-        """)
+        """,
+        annotations = @Annotations(title = "gets all the dependency management dependencies", readOnlyHint = true, destructiveHint = false, idempotentHint = false))
     public ToolResponse getAllDependenciesManagement() throws IOException, XmlPullParserException {
         log.info("gets all the dependencies in the dependencyManagement section");
 
@@ -121,8 +124,8 @@ public class MavenPomXmlMCPServer {
         - Output: Collection containing key-value pairs: {"java.version": "11", "maven.compiler.source": "11"}
 
         The method handles XML parsing automatically and returns an empty collection if no <properties> section exists in the pom.xml file. It reads the file without modifying it.
-        """)
-//        annotations = @Annotations(readOnlyHint = true, destructiveHint = false, idempotentHint = false))
+        """,
+        annotations = @Annotations(title = "gets all the properties", readOnlyHint = true, destructiveHint = false, idempotentHint = false))
     public ToolResponse getAllProperties() throws IOException, XmlPullParserException {
         log.info("gets all the properties");
 
@@ -150,8 +153,8 @@ public class MavenPomXmlMCPServer {
         - Result: Adds <java.version>11</java.version> to the <properties> section of the pom.xml
 
         The method handles XML parsing, property insertion, and file writing operations automatically.
-        """)
-//        annotations = @Annotations(readOnlyHint = false, destructiveHint = false, idempotentHint = false))
+        """,
+        annotations = @Annotations(title = "adds a new property", readOnlyHint = false, destructiveHint = false, idempotentHint = false))
     public ToolResponse addNewProperty(
         @ToolArg(name = "property key", description = "The name of the property key to be added.") String key,
         @ToolArg(name = "property value", description = "The value of property to be added.") String value)
@@ -184,8 +187,8 @@ public class MavenPomXmlMCPServer {
         - After: <java.version>17</java.version>
 
         The method handles XML parsing, property location, value replacement, and file writing operations automatically. If the specified property key does not exist in the pom.xml, the method typically returns an error or indication that the property was not found, without modifying the file.
-        """)
-//        annotations = @Annotations(readOnlyHint = false, destructiveHint = false, idempotentHint = false))
+        """,
+        annotations = @Annotations(title = "updates the value of an existing property", readOnlyHint = false, destructiveHint = false, idempotentHint = false))
     public ToolResponse updateExistingPropertyValue(
         @ToolArg(name = "property key", description = "The name of the property key to look for.") String key,
         @ToolArg(name = "property value", description = "The new value of the existing property.") String value)
@@ -218,8 +221,8 @@ public class MavenPomXmlMCPServer {
         - After: <properties><maven.compiler.source>11</maven.compiler.source></properties>
 
         The method handles XML parsing, property location, element removal, and file writing operations automatically. If the specified property key does not exist in the pom.xml, the method typically returns an error or indication that the property was not found, without modifying the file. If removing the property results in an empty <properties> section, the implementation may choose to either keep the empty section or remove it entirely.
-        """)
-//        annotations = @Annotations(readOnlyHint = false, destructiveHint = true, idempotentHint = false))
+        """,
+        annotations = @Annotations(title = "removes an existing property", readOnlyHint = false, destructiveHint = true, idempotentHint = false))
     public ToolResponse removeExistingProperty(
         @ToolArg(name = "property key", description = "The name of the property key to remove.") String key)
         throws IOException, XmlPullParserException {
