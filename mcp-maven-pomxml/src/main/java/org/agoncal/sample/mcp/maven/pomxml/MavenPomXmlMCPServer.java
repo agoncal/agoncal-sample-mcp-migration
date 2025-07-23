@@ -1,9 +1,10 @@
 package org.agoncal.sample.mcp.maven.pomxml;
 
-import io.quarkiverse.mcp.server.Content;
-import io.quarkiverse.mcp.server.TextContent;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import io.quarkiverse.mcp.server.Tool;
-import io.quarkiverse.mcp.server.Tool.Annotations;
 import io.quarkiverse.mcp.server.ToolArg;
 import io.quarkiverse.mcp.server.ToolResponse;
 import jakarta.annotation.PostConstruct;
@@ -33,6 +34,7 @@ public class MavenPomXmlMCPServer {
     ).toAbsolutePath();
     private static final MavenXpp3Reader reader = new MavenXpp3Reader();
     private static final MavenXpp3Writer writer = new MavenXpp3Writer();
+    private static final ObjectMapper jsonMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
     @PostConstruct
     void getPomXMLFile() throws IOException {
@@ -40,6 +42,75 @@ public class MavenPomXmlMCPServer {
         if (inputStream == null) {
             throw new IOException("pom.xml not found in classpath");
         }
+    }
+
+    @Tool(name = "gets_all_the_dependencies", description = """
+        This method returns all existing dependencies from a Maven pom.xml file. This method parses the XML structure of the POM file, locates the <dependencies> section, and retrieves all dependency defined within it.
+
+        Example usage:
+        - Input: pom.xml file containing dependencies like <dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version><scope>provided</scope></dependency>
+        - Output: Collection containing: {"groupId": "jakarta.platform", "artifactId": "jakarta.jakartaee-api", "version": "${version.jakarta.ee}", "scope": "provided"}
+
+        The method handles XML parsing automatically and returns an empty collection if no <dependencies> section exists in the pom.xml file. It reads the file without modifying it.
+        """)
+    public ToolResponse getAllDependencies() throws IOException, XmlPullParserException {
+        log.info("gets all the dependencies");
+
+        // Read the pom.xml file
+        Model model = readModel();
+
+        // Performs checks
+        if (model.getDependencies().isEmpty()) {
+            return ToolResponse.success("No dependencies in the pom.xml file.");
+        }
+
+        // Builds the list of dependencies
+        List<DependencyRecord> dependencies = model.getDependencies().stream()
+            .map(dependency -> new DependencyRecord(
+                dependency.getGroupId(),
+                dependency.getArtifactId(),
+                dependency.getVersion(),
+                dependency.getType(),
+                dependency.getScope()))
+            .collect(Collectors.toList());
+
+        return ToolResponse.success(toJson(dependencies));
+    }
+
+    @Tool(name = "gets_all_the_dependency_management_dependencies", description = """
+        This method returns all existing dependencies of a <dependencyManagement> section from a Maven pom.xml file. This method parses the XML structure of the POM file, locates the <dependencies> section within <dependencyManagement>, and retrieves all dependency defined within it.
+
+        Example usage:
+        - Input: pom.xml file containing dependencies like <dependencyManagement><dependencies><dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version><scope>provided</scope></dependency></dependencies></dependencyManagement>
+        - Output: Collection containing: {"groupId": "jakarta.platform", "artifactId": "jakarta.jakartaee-api", "version": "${version.jakarta.ee}", "scope": "provided"}
+
+        The method handles XML parsing automatically and returns an empty collection if no <dependencies> section exists in the pom.xml file. It reads the file without modifying it.
+        """)
+    public ToolResponse getAllDependenciesManagement() throws IOException, XmlPullParserException {
+        log.info("gets all the dependencies in the dependencyManagement section");
+
+        // Read the pom.xml file
+        Model model = readModel();
+
+        // Performs checks
+        if (model.getDependencyManagement() == null) {
+            return ToolResponse.success("No dependencyManagement section in the pom.xml file.");
+        }
+        if (model.getDependencyManagement().getDependencies().isEmpty()) {
+            return ToolResponse.success("No dependencies in the dependencyManagement in the pom.xml file.");
+        }
+
+        // Builds the list of dependencies
+        List<DependencyRecord> dependencies = model.getDependencyManagement().getDependencies().stream()
+            .map(dependency -> new DependencyRecord(
+                dependency.getGroupId(),
+                dependency.getArtifactId(),
+                dependency.getVersion(),
+                dependency.getType(),
+                dependency.getScope()))
+            .collect(Collectors.toList());
+
+        return ToolResponse.success(toJson(dependencies));
     }
 
     @Tool(name = "gets_all_the_properties", description = """
@@ -50,8 +121,8 @@ public class MavenPomXmlMCPServer {
         - Output: Collection containing key-value pairs: {"java.version": "11", "maven.compiler.source": "11"}
 
         The method handles XML parsing automatically and returns an empty collection if no <properties> section exists in the pom.xml file. It reads the file without modifying it.
-        """,
-        annotations = @Annotations(readOnlyHint = true, destructiveHint = false, idempotentHint = false))
+        """)
+//        annotations = @Annotations(readOnlyHint = true, destructiveHint = false, idempotentHint = false))
     public ToolResponse getAllProperties() throws IOException, XmlPullParserException {
         log.info("gets all the properties");
 
@@ -64,11 +135,11 @@ public class MavenPomXmlMCPServer {
         }
 
         // Builds the list of properties
-        List<Content> properties = model.getProperties().entrySet().stream()
-            .map(entry -> new TextContent(new Pair((String) entry.getKey(), (String) entry.getValue()).toString()))
+        List<PropertyRecord> properties = model.getProperties().entrySet().stream()
+            .map(entry -> new PropertyRecord((String) entry.getKey(), (String) entry.getValue()))
             .collect(Collectors.toList());
 
-        return ToolResponse.success(properties);
+        return ToolResponse.success(toJson(properties));
     }
 
     @Tool(name = "adds_a_new_property", description = """
@@ -79,8 +150,8 @@ public class MavenPomXmlMCPServer {
         - Result: Adds <java.version>11</java.version> to the <properties> section of the pom.xml
 
         The method handles XML parsing, property insertion, and file writing operations automatically.
-        """,
-        annotations = @Annotations(readOnlyHint = false, destructiveHint = false, idempotentHint = false))
+        """)
+//        annotations = @Annotations(readOnlyHint = false, destructiveHint = false, idempotentHint = false))
     public ToolResponse addNewProperty(
         @ToolArg(name = "property key", description = "The name of the property key to be added.") String key,
         @ToolArg(name = "property value", description = "The value of property to be added.") String value)
@@ -113,8 +184,8 @@ public class MavenPomXmlMCPServer {
         - After: <java.version>17</java.version>
 
         The method handles XML parsing, property location, value replacement, and file writing operations automatically. If the specified property key does not exist in the pom.xml, the method typically returns an error or indication that the property was not found, without modifying the file.
-        """,
-        annotations = @Annotations(readOnlyHint = false, destructiveHint = false, idempotentHint = false))
+        """)
+//        annotations = @Annotations(readOnlyHint = false, destructiveHint = false, idempotentHint = false))
     public ToolResponse updateExistingPropertyValue(
         @ToolArg(name = "property key", description = "The name of the property key to look for.") String key,
         @ToolArg(name = "property value", description = "The new value of the existing property.") String value)
@@ -147,8 +218,8 @@ public class MavenPomXmlMCPServer {
         - After: <properties><maven.compiler.source>11</maven.compiler.source></properties>
 
         The method handles XML parsing, property location, element removal, and file writing operations automatically. If the specified property key does not exist in the pom.xml, the method typically returns an error or indication that the property was not found, without modifying the file. If removing the property results in an empty <properties> section, the implementation may choose to either keep the empty section or remove it entirely.
-        """,
-        annotations = @Annotations(readOnlyHint = false, destructiveHint = true, idempotentHint = false))
+        """)
+//        annotations = @Annotations(readOnlyHint = false, destructiveHint = true, idempotentHint = false))
     public ToolResponse removeExistingProperty(
         @ToolArg(name = "property key", description = "The name of the property key to remove.") String key)
         throws IOException, XmlPullParserException {
@@ -184,8 +255,15 @@ public class MavenPomXmlMCPServer {
             writer.write(outputStream, model);
         }
     }
+
+    public static String toJson(Object object) throws JsonProcessingException {
+        return jsonMapper.writeValueAsString(object);
+    }
 }
 
-record Pair(String key, String value) {
+record PropertyRecord(String key, String value) {
+}
+
+record DependencyRecord(String groupId, String artifactId, String version, String type, String scope) {
 }
 
