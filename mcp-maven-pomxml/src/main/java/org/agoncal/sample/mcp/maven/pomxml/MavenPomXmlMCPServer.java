@@ -11,6 +11,7 @@ import io.quarkiverse.mcp.server.ToolResponse;
 import jakarta.annotation.PostConstruct;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.Plugin;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
@@ -74,6 +75,146 @@ public class MavenPomXmlMCPServer {
             .collect(Collectors.toList());
 
         return ToolResponse.success(toJson(profiles));
+    }
+
+    @Tool(name = "gets_all_the_plugins", description = """
+        This method returns all existing plugins from a Maven pom.xml file. This method parses the XML structure of the POM file, locates the <plugins> section, and retrieves all plugin defined within it.
+
+        Example usage:
+        - Input: pom.xml file containing plugins like <plugin><artifactId>maven-compiler-plugin</artifactId><version>${version.maven.compiler.plugin}</version><inherited>true</inherited></plugin>
+        - Output: Collection containing: {"artifactId": "maven-compiler-plugin", "version": "${version.maven.compiler.plugin}", "inherited": "true"}
+
+        The method handles XML parsing automatically and returns an empty collection if no <plugins> section exists in the pom.xml file. It reads the file without modifying it.
+        """,
+        annotations = @Annotations(title = "gets all the plugins", readOnlyHint = true, destructiveHint = false, idempotentHint = false))
+    public ToolResponse getAllPlugins() throws IOException, XmlPullParserException {
+        log.info("gets all the plugins");
+
+        // Read the pom.xml file
+        Model model = readModel();
+
+        // Performs checks
+        if (model.getBuild() == null) {
+            return ToolResponse.success("No build section in the pom.xml file.");
+        }
+        if (model.getBuild().getPlugins().isEmpty()) {
+            return ToolResponse.success("No plugins in the pom.xml file.");
+        }
+
+        // Builds the list of plugins PluginRecord from model.getBuild().getPlugins(). It also retrieves the dependencies of each plugin if they exist.
+        List<PluginRecord> plugins = model.getBuild().getPlugins().stream()
+            .map(plugin -> {
+                List<DependencyRecord> dependencies = plugin.getDependencies() != null ? plugin.getDependencies().stream()
+                    .map(dependency -> new DependencyRecord(
+                        dependency.getGroupId(),
+                        dependency.getArtifactId(),
+                        dependency.getVersion(),
+                        dependency.getType(),
+                        dependency.getScope()))
+                    .collect(Collectors.toList()) : List.of();
+                return new PluginRecord(
+                    plugin.getGroupId(),
+                    plugin.getArtifactId(),
+                    plugin.getVersion(),
+                    String.valueOf(plugin.isInherited()),
+                    dependencies);
+            })
+            .collect(Collectors.toList());
+
+        return ToolResponse.success(toJson(plugins));
+    }
+
+    @Tool(name = "updates_the_version_of_an_existing_plugin", description = """
+        This method modifies the version of an existing plugin in a Maven pom.xml file. This method takes a plugin (groupId and artifactId) and a new version as parameters, locates the specified plugin within the <plugins> section of the POM file, and updates its value while preserving all other plugins and the XML structure. The method only updates existing plugins and does not create new ones if the specified groupId and artifactId are not found.
+
+        Example usage:
+        - Input: plugin "rg.apache.tomee.maven", "tomee-maven-plugin", "10.0.0-M1"
+        - Before: <plugin><groupId>rg.apache.tomee.maven</groupId><artifactId>tomee-maven-plugin</artifactId><version>10.0.0-Beta1</version></plugin>
+        - After: <plugin><groupId>rg.apache.tomee.maven</groupId><artifactId>tomee-maven-plugin</artifactId><version>10.0.0-M1</version></plugin>
+
+        The method handles XML parsing, plugin location, value replacement, and file writing operations automatically. If the specified plugin key does not exist in the pom.xml, the method typically returns an error or indication that the plugin was not found, without modifying the file.
+        """,
+        annotations = @Annotations(title = "updates the version of an existing plugin", readOnlyHint = false, destructiveHint = false, idempotentHint = false))
+    public ToolResponse updateExistingPluginVersion(
+        @ToolArg(name = "group id", description = "The group id of the plugin key to be updated.") String groupId,
+        @ToolArg(name = "artifact id", description = "The artifact id of the plugin key to be updated.") String artifactId,
+        @ToolArg(name = "version", description = "The new version of the plugin to be updated.") String version)
+        throws IOException, XmlPullParserException {
+        log.info("updates the existing plugin " + groupId + " " + artifactId + " " + version);
+
+        // Read the pom.xml file
+        Model model = readModel();
+
+        // Performs checks
+        if (model.getBuild() == null) {
+            return ToolResponse.success("No build section in the pom.xml file.");
+        }
+
+        boolean found = false;
+        for (Plugin plugin : model.getBuild().getPlugins()) {
+            if (plugin.getGroupId().equals(groupId) && plugin.getArtifactId().equals(artifactId)) {
+                // Updates the plugin value
+                plugin.setVersion(version);
+                found = true;
+                break;
+            }
+        }
+
+        // If not found, returns an error
+        if (!found) {
+            return ToolResponse.error("Plugin '" + groupId + ":" + artifactId + "' not found in the pom.xml file.");
+        }
+
+        // Writes back the pom.xml file
+        writeModel(model);
+
+        return ToolResponse.success("The version of the existing plugin " + groupId + " " + artifactId + " has been updated to " + version);
+    }
+
+    @Tool(name = "removes_an_existing_plugin", description = """
+        This method deletes an existing plugin from a Maven pom.xml file. This method takes a plugin groupId and artifactId as a parameter, locates the specified plugin within the <plugins> section of the POM file, and removes it entirely while preserving all other plugins and the XML structure. The method only removes existing plugins and does not modify the file if the specified key is not found.
+
+        Example usage:
+        - Input: groupId "org.hibernate.orm", artifactId "hibernate-core"
+        - Before: <plugins><plugin><groupId>org.hibernate.orm</groupId><artifactId>hibernate-core</artifactId><version>6.0.9.Final</version></plugin><plugin><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version></plugin></plugins>
+        - After: <plugins><plugin><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version></plugin></plugins>
+
+        The method handles XML parsing, plugin location, element removal, and file writing operations automatically. If the specified plugin does not exist in the pom.xml, the method typically returns an error or indication that the plugin was not found, without modifying the file. If removing the plugin results in an empty <plugins> section, the implementation may choose to either keep the empty section or remove it entirely.
+        """,
+        annotations = @Annotations(title = "removes an existing plugin", readOnlyHint = false, destructiveHint = true, idempotentHint = false))
+    public ToolResponse removeExistingPlugin(
+        @ToolArg(name = "group id", description = "The group id of the plugin to be removed.") String groupId,
+        @ToolArg(name = "artifact id", description = "The artifact id of the plugin to be removed.") String artifactId)
+        throws IOException, XmlPullParserException {
+        log.info("remove the existing plugin " + groupId + " " + artifactId);
+
+        // Read the pom.xml file
+        Model model = readModel();
+
+        // Performs checks
+        if (model.getBuild() == null) {
+            return ToolResponse.success("No build section in the pom.xml file.");
+        }
+
+        // Removes the existing plugin
+        boolean found = false;
+        for (Plugin plugin : model.getBuild().getPlugins()) {
+            if (plugin.getGroupId().equals(groupId) && plugin.getArtifactId().equals(artifactId)) {
+                model.getBuild().removePlugin(plugin);
+                found = true;
+                break;
+            }
+        }
+
+        // If not found, returns an error
+        if (!found) {
+            return ToolResponse.error("Plugin '" + groupId + ":" + artifactId + "' not found in the pom.xml file.");
+        }
+
+        // Writes back the pom.xml file
+        writeModel(model);
+
+        return ToolResponse.success("The existing plugin '" + groupId + ":" + artifactId + "' has been removed");
     }
 
     @Tool(name = "gets_all_the_dependencies", description = """
@@ -207,7 +348,7 @@ public class MavenPomXmlMCPServer {
         The method handles XML parsing, dependency location, element removal, and file writing operations automatically. If the specified dependency does not exist in the pom.xml, the method typically returns an error or indication that the dependency was not found, without modifying the file. If removing the dependency results in an empty <dependencies> section, the implementation may choose to either keep the empty section or remove it entirely.
         """,
         annotations = @Annotations(title = "removes an existing dependency", readOnlyHint = false, destructiveHint = true, idempotentHint = false))
-    public ToolResponse removeExistingProperty(
+    public ToolResponse removeExistingDependency(
         @ToolArg(name = "group id", description = "The group id of the dependency to be removed.") String groupId,
         @ToolArg(name = "artifact id", description = "The artifact id of the dependency to be removed.") String artifactId)
         throws IOException, XmlPullParserException {
@@ -426,6 +567,10 @@ record PropertyRecord(String key, String value) {
 }
 
 record DependencyRecord(String groupId, String artifactId, String version, String type, String scope) {
+}
+
+record PluginRecord(String groupId, String artifactId, String version, String inherited,
+                    List<DependencyRecord> dependencies) {
 }
 
 record ProfileRecord(String id) {

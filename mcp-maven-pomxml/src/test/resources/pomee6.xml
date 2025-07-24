@@ -77,6 +77,19 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${version.maven.compiler.plugin}</version>
+        <dependencies>
+          <dependency>
+            <groupId>maven-compile.mockito</groupId>
+            <artifactId>maven-compile-core</artifactId>
+            <version>${version.maven-compile}</version>
+          </dependency>
+          <dependency>
+            <groupId>maven-compile.jupiter</groupId>
+            <artifactId>maven-compile-jupiter</artifactId>
+            <version>${version.maven-compile2}</version>
+            <scope>test</scope>
+          </dependency>
+        </dependencies>
         <inherited>true</inherited>
         <configuration>
           <source>${version.java}</source>
@@ -112,13 +125,9 @@
         </configuration>
       </plugin>
       <plugin>
-        <artifactId>maven-war-plugin</artifactId>
-        <version>${version.maven.war.plugin}</version>
-      </plugin>
-      <plugin>
         <groupId>org.apache.tomee.maven</groupId>
         <artifactId>tomee-maven-plugin</artifactId>
-        <version>10.0.0-M1</version>
+        <version>11.1.2</version>
         <configuration>
           <tomeeClassifier>jakartaee10</tomeeClassifier>
         </configuration>
