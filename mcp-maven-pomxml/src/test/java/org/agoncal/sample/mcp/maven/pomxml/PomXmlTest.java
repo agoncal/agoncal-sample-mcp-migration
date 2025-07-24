@@ -17,7 +17,7 @@ public class PomXmlTest {
 
     public static void main(String[] args) throws IOException, XmlPullParserException {
 
-        new MavenPomXmlMCPServer().getAllDependenciesManagement();
+        new MavenPomXmlMCPServer().getAllProfiles();
 
         Path pomPath = Paths.get("mcp-maven-pomxml/src/test/resources/pomee6.xml").toAbsolutePath();
 
