@@ -9,6 +9,7 @@ import io.quarkiverse.mcp.server.Tool.Annotations;
 import io.quarkiverse.mcp.server.ToolArg;
 import io.quarkiverse.mcp.server.ToolResponse;
 import jakarta.annotation.PostConstruct;
+import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
@@ -107,6 +108,133 @@ public class MavenPomXmlMCPServer {
             .collect(Collectors.toList());
 
         return ToolResponse.success(toJson(dependencies));
+    }
+
+    @Tool(name = "adds_a_new_dependency", description = """
+        This method adds a new dependency to an existing Maven pom.xml file. This method takes a dependency and inserts them into the <dependencies> section of the POM file. If no <dependencies> section exists, the method creates one. The method preserves the existing XML structure and formatting while safely adding the new dependency without overwriting existing dependencies or corrupting the file structure.
+
+        Example usage:
+        - Input: dependency name "jakarta.platform", "jakarta.jakartaee-api", "${version.jakarta.ee}", "provided"
+        - Result: Adds <dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version><scope>provided</scope></dependency> to the <dependencies> section of the pom.xml
+
+        The method handles XML parsing, dependency insertion, and file writing operations automatically.
+        """,
+        annotations = @Annotations(title = "adds a new dependency", readOnlyHint = false, destructiveHint = false, idempotentHint = false))
+    public ToolResponse addNewDependency(
+        @ToolArg(name = "group id", description = "The group id of the dependency key to be added.") String groupId,
+        @ToolArg(name = "artifact id", description = "The artifact id of the dependency key to be added.") String artifactId,
+        @ToolArg(name = "version", description = "The version of the dependency key to be added.") String version,
+        @ToolArg(name = "type", description = "The type of the dependency key to be added. Can be jar, pom. The default is jar so you don't need to add <type>jar</type>") String type,
+        @ToolArg(name = "scope", description = "The scope of the dependency key to be added. Can be compile, provided, runtime, test, system, import. The default is compile so you don't need to add <scope>compile</scope>") String scope)
+        throws IOException, XmlPullParserException {
+        log.info("adds the new dependency " + groupId + " " + artifactId + " " + version + " " + type + " " + scope);
+
+        // Read the pom.xml file
+        Model model = readModel();
+
+        // Performs checks
+        for (Dependency dependency : model.getDependencies()) {
+            if (dependency.getGroupId().equals(groupId) && dependency.getArtifactId().equals(artifactId)) {
+                return ToolResponse.error("Dependency '" + groupId + ":" + artifactId + "' already exists in the pom.xml file.");
+            }
+        }
+
+        // Adds a new dependency
+        Dependency dependency = new Dependency();
+        dependency.setGroupId(groupId);
+        dependency.setArtifactId(artifactId);
+        dependency.setVersion(version);
+        dependency.setType(type);
+        dependency.setScope(scope);
+        model.addDependency(dependency);
+
+        // Writes back the pom.xml file
+        writeModel(model);
+
+        return ToolResponse.success("The new dependency " + groupId + " " + artifactId + " " + version + " has been added with value " + dependency);
+    }
+
+    @Tool(name = "updates_the_version_of_an_existing_dependency", description = """
+        This method modifies the version of an existing dependency in a Maven pom.xml file. This method takes a dependency (groupId and artifactId) and a new version as parameters, locates the specified dependency within the <dependencies> section of the POM file, and updates its value while preserving all other dependencies and the XML structure. The method only updates existing dependencies and does not create new ones if the specified groupId and artifactId are not found.
+
+        Example usage:
+        - Input: dependency "jakarta.platform", "jakarta.jakartaee-api", "11"
+        - Before: <dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version></dependency>
+        - After: <dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>11</version></dependency>
+
+        The method handles XML parsing, dependency location, value replacement, and file writing operations automatically. If the specified dependency key does not exist in the pom.xml, the method typically returns an error or indication that the dependency was not found, without modifying the file.
+        """,
+        annotations = @Annotations(title = "updates the version of an existing dependency", readOnlyHint = false, destructiveHint = false, idempotentHint = false))
+    public ToolResponse updateExistingDependencyVersion(
+        @ToolArg(name = "group id", description = "The group id of the dependency key to be updated.") String groupId,
+        @ToolArg(name = "artifact id", description = "The artifact id of the dependency key to be updated.") String artifactId,
+        @ToolArg(name = "version", description = "The new version of the dependency to be updated.") String version)
+        throws IOException, XmlPullParserException {
+        log.info("updates the existing dependency " + groupId + " " + artifactId + " " + version);
+
+        // Read the pom.xml file
+        Model model = readModel();
+
+        boolean found = false;
+        for (Dependency dependency : model.getDependencies()) {
+            if (dependency.getGroupId().equals(groupId) && dependency.getArtifactId().equals(artifactId)) {
+                // Updates the dependency value
+                dependency.setVersion(version);
+                found = true;
+                break;
+            }
+        }
+
+        // If not found, returns an error
+        if (!found) {
+            return ToolResponse.error("Dependency '" + groupId + ":" + artifactId + "' not found in the pom.xml file.");
+        }
+
+        // Writes back the pom.xml file
+        writeModel(model);
+
+        return ToolResponse.success("The version of the existing dependency " + groupId + " " + artifactId + " has been updated to " + version);
+    }
+
+    @Tool(name = "removes_an_existing_dependency", description = """
+        This method deletes an existing dependency from a Maven pom.xml file. This method takes a dependency groupId and artifactId as a parameter, locates the specified dependency within the <dependencies> section of the POM file, and removes it entirely while preserving all other dependencies and the XML structure. The method only removes existing dependencies and does not modify the file if the specified key is not found.
+
+        Example usage:
+        - Input: groupId "org.hibernate.orm", artifactId "hibernate-core"
+        - Before: <dependencies><dependency><groupId>org.hibernate.orm</groupId><artifactId>hibernate-core</artifactId><version>6.0.9.Final</version></dependency><dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version></dependency></dependencies>
+        - After: <dependencies><dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version></dependency></dependencies>
+
+        The method handles XML parsing, dependency location, element removal, and file writing operations automatically. If the specified dependency does not exist in the pom.xml, the method typically returns an error or indication that the dependency was not found, without modifying the file. If removing the dependency results in an empty <dependencies> section, the implementation may choose to either keep the empty section or remove it entirely.
+        """,
+        annotations = @Annotations(title = "removes an existing dependency", readOnlyHint = false, destructiveHint = true, idempotentHint = false))
+    public ToolResponse removeExistingProperty(
+        @ToolArg(name = "group id", description = "The group id of the dependency to be removed.") String groupId,
+        @ToolArg(name = "artifact id", description = "The artifact id of the dependency to be removed.") String artifactId)
+        throws IOException, XmlPullParserException {
+        log.info("remove the existing dependency " + groupId + " " + artifactId);
+
+        // Read the pom.xml file
+        Model model = readModel();
+
+        // Removes the existing dependency
+        boolean found = false;
+        for (Dependency dependency : model.getDependencies()) {
+            if (dependency.getGroupId().equals(groupId) && dependency.getArtifactId().equals(artifactId)) {
+                model.removeDependency(dependency);
+                found = true;
+                break;
+            }
+        }
+
+        // If not found, returns an error
+        if (!found) {
+            return ToolResponse.error("Dependency '" + groupId + ":" + artifactId + "' not found in the pom.xml file.");
+        }
+
+        // Writes back the pom.xml file
+        writeModel(model);
+
+        return ToolResponse.success("The existing dependency '" + groupId + ":" + artifactId + "' has been removed");
     }
 
     @Tool(name = "gets_all_the_dependency_management_dependencies", description = """
