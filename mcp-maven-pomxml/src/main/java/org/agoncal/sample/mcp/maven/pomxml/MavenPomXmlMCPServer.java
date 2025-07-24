@@ -45,6 +45,36 @@ public class MavenPomXmlMCPServer {
         }
     }
 
+    @Tool(name = "gets_all_the_profiles", description = """
+        This method returns all existing profiles from a Maven pom.xml file. This method parses the XML structure of the POM file, locates the <profiles> section, and retrieves all profiles defined within it.
+
+        Example usage:
+        - Input: pom.xml file containing profiles like <profiles><profile><id>jakarta-ee</id></profile><profile><id>jacoco</id></profile></profiles>
+        - Output: Collection containing: {"id": "jakarta-ee", "id": "jacoco"}
+
+        The method handles XML parsing automatically and returns an empty collection if no <profiles> section exists in the pom.xml file. It reads the file without modifying it.
+        """,
+        annotations = @Annotations(title = "gets all the profiles", readOnlyHint = true, destructiveHint = false, idempotentHint = false))
+    public ToolResponse getAllProfiles() throws IOException, XmlPullParserException {
+        log.info("gets all the profiles");
+
+        // Read the pom.xml file
+        Model model = readModel();
+
+        // Performs checks
+        if (model.getProfiles().isEmpty()) {
+            return ToolResponse.success("No profiles in the pom.xml file.");
+        }
+
+        // Builds the list of dependencies
+        List<ProfileRecord> profiles = model.getProfiles().stream()
+            .map(profile -> new ProfileRecord(
+                profile.getId()))
+            .collect(Collectors.toList());
+
+        return ToolResponse.success(toJson(profiles));
+    }
+
     @Tool(name = "gets_all_the_dependencies", description = """
         This method returns all existing dependencies from a Maven pom.xml file. This method parses the XML structure of the POM file, locates the <dependencies> section, and retrieves all dependency defined within it.
 
@@ -270,3 +300,5 @@ record PropertyRecord(String key, String value) {
 record DependencyRecord(String groupId, String artifactId, String version, String type, String scope) {
 }
 
+record ProfileRecord(String id) {
+}
