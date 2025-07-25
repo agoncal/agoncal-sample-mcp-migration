@@ -8,44 +8,20 @@ import io.quarkiverse.mcp.server.Tool;
 import io.quarkiverse.mcp.server.Tool.Annotations;
 import io.quarkiverse.mcp.server.ToolArg;
 import io.quarkiverse.mcp.server.ToolResponse;
-import jakarta.annotation.PostConstruct;
-import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Model;
-import org.apache.maven.model.Plugin;
-import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
-import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
+import jakarta.inject.Inject;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class MavenDependencyMCPServer {
 
     private static final Logger log = Logger.getLogger(MavenDependencyMCPServer.class);
-    private static final String DEFAULT_POM_XML_PATH = "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration/mcp-maven-pomxml/src/test/resources/pomee6.xml";
-    private static final Path POM_XML_PATH = Paths.get(
-        Optional.ofNullable(System.getenv("POM_XML_PATH")).orElse(DEFAULT_POM_XML_PATH)
-    ).toAbsolutePath();
-    private static final MavenXpp3Reader reader = new MavenXpp3Reader();
-    private static final MavenXpp3Writer writer = new MavenXpp3Writer();
     private static final ObjectMapper jsonMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
-    @PostConstruct
-    void getPomXMLFile() throws IOException {
-        InputStream inputStream = Files.newInputStream(POM_XML_PATH);
-        if (inputStream == null) {
-            throw new IOException("pom.xml not found in classpath");
-        }
-    }
+    @Inject
+    MavenDependencyService mavenService;
 
     @Tool(name = "gets_all_the_profiles", description = """
         This method returns all existing profiles from a Maven pom.xml file. This method parses the XML structure of the POM file, locates the <profiles> section, and retrieves all profiles defined within it.
@@ -60,19 +36,11 @@ public class MavenDependencyMCPServer {
     public ToolResponse getAllProfiles() throws IOException, XmlPullParserException {
         log.info("gets all the profiles");
 
-        // Read the pom.xml file
-        Model model = readModel();
+        List<ProfileRecord> profiles = mavenService.getAllProfiles();
 
-        // Performs checks
-        if (model.getProfiles().isEmpty()) {
+        if (profiles.isEmpty()) {
             return ToolResponse.success("No profiles in the pom.xml file.");
         }
-
-        // Builds the list of dependencies
-        List<ProfileRecord> profiles = model.getProfiles().stream()
-            .map(profile -> new ProfileRecord(
-                profile.getId()))
-            .collect(Collectors.toList());
 
         return ToolResponse.success(toJson(profiles));
     }
@@ -90,92 +58,20 @@ public class MavenDependencyMCPServer {
     public ToolResponse getAllPlugins() throws IOException, XmlPullParserException {
         log.info("gets all the plugins");
 
-        // Read the pom.xml file
-        Model model = readModel();
+        List<PluginRecord> plugins = mavenService.getAllPlugins();
 
-        // Performs checks
-        if (model.getBuild() == null) {
-            return ToolResponse.success("No build section in the pom.xml file.");
-        }
-        if (model.getBuild().getPlugins().isEmpty()) {
+        if (plugins.isEmpty()) {
             return ToolResponse.success("No plugins in the pom.xml file.");
         }
-
-        // Builds the list of plugins with their dependencies
-        List<PluginRecord> plugins = model.getBuild().getPlugins().stream()
-            .map(plugin -> {
-                List<DependencyRecord> dependencies = plugin.getDependencies() != null ? plugin.getDependencies().stream()
-                    .map(dependency -> new DependencyRecord(null,
-                        dependency.getGroupId(),
-                        dependency.getArtifactId(),
-                        dependency.getVersion(),
-                        dependency.getType(),
-                        dependency.getScope()))
-                    .collect(Collectors.toList()) : List.of();
-                return new PluginRecord(null,
-                    plugin.getGroupId(),
-                    plugin.getArtifactId(),
-                    plugin.getVersion(),
-                    String.valueOf(plugin.isInherited()),
-                    dependencies);
-            })
-            .collect(Collectors.toList());
 
         return ToolResponse.success(toJson(plugins));
     }
 
-    @Tool(name = "updates_the_version_of_an_existing_plugin", description = """
-        This method modifies the version of an existing plugin in a Maven pom.xml file. This method takes a plugin (groupId and artifactId) and a new version as parameters, locates the specified plugin within the <plugins> section of the POM file, and updates its value while preserving all other plugins and the XML structure. The method only updates existing plugins and does not create new ones if the specified groupId and artifactId are not found.
-
-        Example usage:
-        - Input: plugin "rg.apache.tomee.maven", "tomee-maven-plugin", "10.0.0-M1"
-        - Before: <plugin><groupId>rg.apache.tomee.maven</groupId><artifactId>tomee-maven-plugin</artifactId><version>10.0.0-Beta1</version></plugin>
-        - After: <plugin><groupId>rg.apache.tomee.maven</groupId><artifactId>tomee-maven-plugin</artifactId><version>10.0.0-M1</version></plugin>
-
-        The method handles XML parsing, plugin location, value replacement, and file writing operations automatically. If the specified plugin key does not exist in the pom.xml, the method typically returns an error or indication that the plugin was not found, without modifying the file.
-        """,
-        annotations = @Annotations(title = "updates the version of an existing plugin", readOnlyHint = false, destructiveHint = false, idempotentHint = false))
-    public ToolResponse updateExistingPluginVersion(
-        @ToolArg(name = "group id", description = "The group id of the plugin key to be updated.") String groupId,
-        @ToolArg(name = "artifact id", description = "The artifact id of the plugin key to be updated.") String artifactId,
-        @ToolArg(name = "version", description = "The new version of the plugin to be updated.") String version)
-        throws IOException, XmlPullParserException {
-        log.info("updates the existing plugin " + groupId + " " + artifactId + " " + version);
-
-        // Read the pom.xml file
-        Model model = readModel();
-
-        // Performs checks
-        if (model.getBuild() == null) {
-            return ToolResponse.success("No build section in the pom.xml file.");
-        }
-
-        boolean found = false;
-        for (Plugin plugin : model.getBuild().getPlugins()) {
-            if (plugin.getGroupId().equals(groupId) && plugin.getArtifactId().equals(artifactId)) {
-                // Updates the plugin value
-                plugin.setVersion(version);
-                found = true;
-                break;
-            }
-        }
-
-        // If not found, returns an error
-        if (!found) {
-            return ToolResponse.error("Plugin '" + groupId + ":" + artifactId + "' not found in the pom.xml file.");
-        }
-
-        // Writes back the pom.xml file
-        writeModel(model);
-
-        return ToolResponse.success("The version of the existing plugin " + groupId + " " + artifactId + " has been updated to " + version);
-    }
-
     @Tool(name = "removes_an_existing_plugin", description = """
-        This method deletes an existing plugin from a Maven pom.xml file. This method takes a plugin groupId and artifactId as a parameter, locates the specified plugin within the <plugins> section of the POM file, and removes it entirely while preserving all other plugins and the XML structure. The method only removes existing plugins and does not modify the file if the specified key is not found.
+        This method deletes an existing plugin from a Maven pom.xml file. This method takes a plugin groupId and artifactId as a parameter, locates the specified plugin within the <plugins> section of the POM file, and removes it entirely while preserving all other plugins and the XML structure. The method only removes existing plugins and does not modify the file if the specified key is not found. If profileId is null, the plugin will be removed from the main POM; otherwise, it will be removed from the specified profile.
 
         Example usage:
-        - Input: groupId "org.hibernate.orm", artifactId "hibernate-core"
+        - Input: profileId null, groupId "org.hibernate.orm", artifactId "hibernate-core"
         - Before: <plugins><plugin><groupId>org.hibernate.orm</groupId><artifactId>hibernate-core</artifactId><version>6.0.9.Final</version></plugin><plugin><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version></plugin></plugins>
         - After: <plugins><plugin><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version></plugin></plugins>
 
@@ -183,38 +79,20 @@ public class MavenDependencyMCPServer {
         """,
         annotations = @Annotations(title = "removes an existing plugin", readOnlyHint = false, destructiveHint = true, idempotentHint = false))
     public ToolResponse removeExistingPlugin(
+        @ToolArg(name = "profile id", description = "The profile ID to remove the plugin from (null for main POM).") String profileId,
         @ToolArg(name = "group id", description = "The group id of the plugin to be removed.") String groupId,
         @ToolArg(name = "artifact id", description = "The artifact id of the plugin to be removed.") String artifactId)
         throws IOException, XmlPullParserException {
-        log.info("remove the existing plugin " + groupId + " " + artifactId);
+        log.info("remove the existing plugin " + groupId + " " + artifactId +
+            (profileId != null ? " from profile: " + profileId : " from main POM"));
 
-        // Read the pom.xml file
-        Model model = readModel();
-
-        // Performs checks
-        if (model.getBuild() == null) {
-            return ToolResponse.success("No build section in the pom.xml file.");
+        try {
+            mavenService.removePlugin(profileId, groupId, artifactId);
+            return ToolResponse.success("The existing plugin '" + groupId + ":" + artifactId + "' has been removed" +
+                (profileId != null ? " from profile '" + profileId + "'" : " from main POM"));
+        } catch (IllegalArgumentException e) {
+            return ToolResponse.error(e.getMessage());
         }
-
-        // Removes the existing plugin
-        boolean found = false;
-        for (Plugin plugin : model.getBuild().getPlugins()) {
-            if (plugin.getGroupId().equals(groupId) && plugin.getArtifactId().equals(artifactId)) {
-                model.getBuild().removePlugin(plugin);
-                found = true;
-                break;
-            }
-        }
-
-        // If not found, returns an error
-        if (!found) {
-            return ToolResponse.error("Plugin '" + groupId + ":" + artifactId + "' not found in the pom.xml file.");
-        }
-
-        // Writes back the pom.xml file
-        writeModel(model);
-
-        return ToolResponse.success("The existing plugin '" + groupId + ":" + artifactId + "' has been removed");
     }
 
     @Tool(name = "gets_all_the_dependencies", description = """
@@ -231,81 +109,43 @@ public class MavenDependencyMCPServer {
     public ToolResponse getAllDependencies() throws IOException, XmlPullParserException {
         log.info("gets all the dependencies");
 
-        // Read the pom.xml file
-        Model model = readModel();
+        List<DependencyRecord> dependencies = mavenService.getAllDependencies();
 
-        // Performs checks
-        if (model.getDependencies().isEmpty()) {
+        if (dependencies.isEmpty()) {
             return ToolResponse.success("No dependencies in the pom.xml file.");
         }
-
-        // Builds the list of dependencies
-        List<DependencyRecord> dependencies = model.getDependencies().stream()
-            .map(dependency -> new DependencyRecord(null,
-                dependency.getGroupId(),
-                dependency.getArtifactId(),
-                dependency.getVersion(),
-                dependency.getType(),
-                dependency.getScope()))
-            .collect(Collectors.toList());
-
-        // Builds the list of dependencies for each profile
-        model.getProfiles().forEach(profile -> {
-            profile.getDependencies().stream()
-                .map(dependency -> new DependencyRecord(profile.getId(),
-                    dependency.getGroupId(),
-                    dependency.getArtifactId(),
-                    dependency.getVersion(),
-                    dependency.getType(),
-                    dependency.getScope()))
-                .forEach(dependencies::add);
-        });
 
         return ToolResponse.success(toJson(dependencies));
     }
 
     @Tool(name = "adds_a_new_dependency", description = """
-        This method adds a new dependency to an existing Maven pom.xml file. This method takes a dependency and inserts them into the <dependencies> section of the POM file. If no <dependencies> section exists, the method creates one. The method preserves the existing XML structure and formatting while safely adding the new dependency without overwriting existing dependencies or corrupting the file structure.
+        This method adds a new dependency to an existing Maven pom.xml file. This method takes a dependency and inserts them into the <dependencies> section of the POM file. If no <dependencies> section exists, the method creates one. The method preserves the existing XML structure and formatting while safely adding the new dependency without overwriting existing dependencies or corrupting the file structure. If profileId is null, the dependency will be added to the main POM; otherwise, it will be added to the specified profile.
 
         Example usage:
-        - Input: dependency name "jakarta.platform", "jakarta.jakartaee-api", "${version.jakarta.ee}", "provided"
+        - Input: profileId null, dependency name "jakarta.platform", "jakarta.jakartaee-api", "${version.jakarta.ee}", "provided"
         - Result: Adds <dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version><scope>provided</scope></dependency> to the <dependencies> section of the pom.xml
 
         The method handles XML parsing, dependency insertion, and file writing operations automatically.
         """,
         annotations = @Annotations(title = "adds a new dependency", readOnlyHint = false, destructiveHint = false, idempotentHint = false))
     public ToolResponse addNewDependency(
+        @ToolArg(name = "profile id", description = "The profile ID to add the dependency to (null for main POM).") String profileId,
         @ToolArg(name = "group id", description = "The group id of the dependency key to be added.") String groupId,
         @ToolArg(name = "artifact id", description = "The artifact id of the dependency key to be added.") String artifactId,
         @ToolArg(name = "version", description = "The version of the dependency key to be added.") String version,
         @ToolArg(name = "type", description = "The type of the dependency key to be added. Can be jar, pom. The default is jar so you don't need to add <type>jar</type>") String type,
         @ToolArg(name = "scope", description = "The scope of the dependency key to be added. Can be compile, provided, runtime, test, system, import. The default is compile so you don't need to add <scope>compile</scope>") String scope)
         throws IOException, XmlPullParserException {
-        log.info("adds the new dependency " + groupId + " " + artifactId + " " + version + " " + type + " " + scope);
+        log.info("adds the new dependency " + groupId + " " + artifactId + " " + version + " " + type + " " + scope +
+            (profileId != null ? " to profile: " + profileId : " to main POM"));
 
-        // Read the pom.xml file
-        Model model = readModel();
-
-        // Performs checks
-        for (Dependency dependency : model.getDependencies()) {
-            if (dependency.getGroupId().equals(groupId) && dependency.getArtifactId().equals(artifactId)) {
-                return ToolResponse.error("Dependency '" + groupId + ":" + artifactId + "' already exists in the pom.xml file.");
-            }
+        try {
+            mavenService.addDependency(profileId, groupId, artifactId, version, type, scope);
+            return ToolResponse.success("The new dependency " + groupId + ":" + artifactId + ":" + version + " has been added" +
+                (profileId != null ? " to profile '" + profileId + "'" : " to main POM"));
+        } catch (IllegalArgumentException e) {
+            return ToolResponse.error(e.getMessage());
         }
-
-        // Adds a new dependency
-        Dependency dependency = new Dependency();
-        dependency.setGroupId(groupId);
-        dependency.setArtifactId(artifactId);
-        dependency.setVersion(version);
-        dependency.setType(type);
-        dependency.setScope(scope);
-        model.addDependency(dependency);
-
-        // Writes back the pom.xml file
-        writeModel(model);
-
-        return ToolResponse.success("The new dependency " + groupId + " " + artifactId + " " + version + " has been added with value " + dependency);
     }
 
     @Tool(name = "updates_the_version_of_an_existing_dependency", description = """
@@ -326,28 +166,12 @@ public class MavenDependencyMCPServer {
         throws IOException, XmlPullParserException {
         log.info("updates the existing dependency " + groupId + " " + artifactId + " " + version);
 
-        // Read the pom.xml file
-        Model model = readModel();
-
-        boolean found = false;
-        for (Dependency dependency : model.getDependencies()) {
-            if (dependency.getGroupId().equals(groupId) && dependency.getArtifactId().equals(artifactId)) {
-                // Updates the dependency value
-                dependency.setVersion(version);
-                found = true;
-                break;
-            }
+        try {
+            mavenService.updateDependencyVersion(groupId, artifactId, version);
+            return ToolResponse.success("The version of the existing dependency " + groupId + ":" + artifactId + " has been updated to " + version);
+        } catch (IllegalArgumentException e) {
+            return ToolResponse.error(e.getMessage());
         }
-
-        // If not found, returns an error
-        if (!found) {
-            return ToolResponse.error("Dependency '" + groupId + ":" + artifactId + "' not found in the pom.xml file.");
-        }
-
-        // Writes back the pom.xml file
-        writeModel(model);
-
-        return ToolResponse.success("The version of the existing dependency " + groupId + " " + artifactId + " has been updated to " + version);
     }
 
     @Tool(name = "removes_an_existing_dependency", description = """
@@ -367,28 +191,12 @@ public class MavenDependencyMCPServer {
         throws IOException, XmlPullParserException {
         log.info("remove the existing dependency " + groupId + " " + artifactId);
 
-        // Read the pom.xml file
-        Model model = readModel();
-
-        // Removes the existing dependency
-        boolean found = false;
-        for (Dependency dependency : model.getDependencies()) {
-            if (dependency.getGroupId().equals(groupId) && dependency.getArtifactId().equals(artifactId)) {
-                model.removeDependency(dependency);
-                found = true;
-                break;
-            }
+        try {
+            mavenService.removeDependency(groupId, artifactId);
+            return ToolResponse.success("The existing dependency '" + groupId + ":" + artifactId + "' has been removed");
+        } catch (IllegalArgumentException e) {
+            return ToolResponse.error(e.getMessage());
         }
-
-        // If not found, returns an error
-        if (!found) {
-            return ToolResponse.error("Dependency '" + groupId + ":" + artifactId + "' not found in the pom.xml file.");
-        }
-
-        // Writes back the pom.xml file
-        writeModel(model);
-
-        return ToolResponse.success("The existing dependency '" + groupId + ":" + artifactId + "' has been removed");
     }
 
     @Tool(name = "gets_all_the_dependency_management_dependencies", description = """
@@ -404,26 +212,11 @@ public class MavenDependencyMCPServer {
     public ToolResponse getAllDependenciesManagement() throws IOException, XmlPullParserException {
         log.info("gets all the dependencies in the dependencyManagement section");
 
-        // Read the pom.xml file
-        Model model = readModel();
+        List<DependencyRecord> dependencies = mavenService.getAllDependencyManagementDependencies();
 
-        // Performs checks
-        if (model.getDependencyManagement() == null) {
-            return ToolResponse.success("No dependencyManagement section in the pom.xml file.");
-        }
-        if (model.getDependencyManagement().getDependencies().isEmpty()) {
+        if (dependencies.isEmpty()) {
             return ToolResponse.success("No dependencies in the dependencyManagement in the pom.xml file.");
         }
-
-        // Builds the list of dependencies
-        List<DependencyRecord> dependencies = model.getDependencyManagement().getDependencies().stream()
-            .map(dependency -> new DependencyRecord(null,
-                dependency.getGroupId(),
-                dependency.getArtifactId(),
-                dependency.getVersion(),
-                dependency.getType(),
-                dependency.getScope()))
-            .collect(Collectors.toList());
 
         return ToolResponse.success(toJson(dependencies));
     }
@@ -441,18 +234,11 @@ public class MavenDependencyMCPServer {
     public ToolResponse getAllProperties() throws IOException, XmlPullParserException {
         log.info("gets all the properties");
 
-        // Read the pom.xml file
-        Model model = readModel();
+        List<PropertyRecord> properties = mavenService.getAllProperties();
 
-        // Performs checks
-        if (model.getProperties().isEmpty()) {
+        if (properties.isEmpty()) {
             return ToolResponse.success("No properties found in the pom.xml file.");
         }
-
-        // Builds the list of properties
-        List<PropertyRecord> properties = model.getProperties().entrySet().stream()
-            .map(entry -> new PropertyRecord(null, (String) entry.getKey(), (String) entry.getValue()))
-            .collect(Collectors.toList());
 
         return ToolResponse.success(toJson(properties));
     }
@@ -473,21 +259,12 @@ public class MavenDependencyMCPServer {
         throws IOException, XmlPullParserException {
         log.info("adds the new property " + key + " with value" + value);
 
-        // Read the pom.xml file
-        Model model = readModel();
-
-        // Performs checks
-        if (model.getProperties().containsKey(key)) {
-            return ToolResponse.error("Property '" + key + "' already exist in the pom.xml file.");
+        try {
+            mavenService.addProperty(key, value);
+            return ToolResponse.success("The new property " + key + " has been added with value " + value);
+        } catch (IllegalArgumentException e) {
+            return ToolResponse.error(e.getMessage());
         }
-
-        // Adds a new property
-        model.addProperty(key, value);
-
-        // Writes back the pom.xml file
-        writeModel(model);
-
-        return ToolResponse.success("The new property " + key + " has been added with value " + value);
     }
 
     @Tool(name = "updates_the_value_of_an_existing_property", description = """
@@ -507,21 +284,12 @@ public class MavenDependencyMCPServer {
         throws IOException, XmlPullParserException {
         log.info("updates the existing property " + key + " with the new value" + value);
 
-        // Read the pom.xml file
-        Model model = readModel();
-
-        // Performs checks
-        if (!model.getProperties().containsKey(key)) {
-            return ToolResponse.error("Property '" + key + "' does not exist in the pom.xml file.");
+        try {
+            mavenService.updatePropertyValue(key, value);
+            return ToolResponse.success("The value of the existing property " + key + " has been updated to " + value);
+        } catch (IllegalArgumentException e) {
+            return ToolResponse.error(e.getMessage());
         }
-
-        // Updates the property value
-        model.getProperties().put(key, value);
-
-        // Writes back the pom.xml file
-        writeModel(model);
-
-        return ToolResponse.success("The value of the existing property " + key + " has been updated to " + value);
     }
 
     @Tool(name = "removes_an_existing_property", description = """
@@ -540,34 +308,11 @@ public class MavenDependencyMCPServer {
         throws IOException, XmlPullParserException {
         log.info("remove the existing property " + key);
 
-        // Read the pom.xml file
-        Model model = readModel();
-
-        // Performs checks
-        if (!model.getProperties().containsKey(key)) {
-            return ToolResponse.error("Property '" + key + "' does not exist in the pom.xml file.");
-        }
-
-        // Removes the existing property
-        model.getProperties().remove(key);
-
-        // Writes back the pom.xml file
-        writeModel(model);
-
-        return ToolResponse.success("The existing property " + key + " has been removed");
-    }
-
-    private static Model readModel() throws IOException, XmlPullParserException {
-        Model model;
-        try (InputStreamReader inputStreamReader = new InputStreamReader(Files.newInputStream(POM_XML_PATH))) {
-            model = reader.read(inputStreamReader);
-        }
-        return model;
-    }
-
-    private static void writeModel(Model model) throws IOException, XmlPullParserException {
-        try (OutputStream outputStream = Files.newOutputStream(POM_XML_PATH)) {
-            writer.write(outputStream, model);
+        try {
+            mavenService.removeProperty(key);
+            return ToolResponse.success("The existing property " + key + " has been removed");
+        } catch (IllegalArgumentException e) {
+            return ToolResponse.error(e.getMessage());
         }
     }
 
@@ -575,4 +320,3 @@ public class MavenDependencyMCPServer {
         return jsonMapper.writeValueAsString(object);
     }
 }
-
