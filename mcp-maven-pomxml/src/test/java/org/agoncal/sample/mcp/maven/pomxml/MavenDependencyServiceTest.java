@@ -126,20 +126,20 @@ class MavenDependencyServiceTest {
         assertNotNull(plugins);
         assertFalse(plugins.isEmpty());
 
-        // Main build has 5 plugins + jacoco profile has 2 plugins = 7 total (after modifications)
-        assertEquals(7, plugins.size());
+        // Main build has 4 plugins + jacoco profile has 1 plugins = 5 total
+        assertEquals(5, plugins.size());
 
         // Check main plugins
         long mainPlugins = plugins.stream()
             .filter(plugin -> plugin.profile() == null)
             .count();
-        assertEquals(5, mainPlugins);
+        assertEquals(4, mainPlugins);
 
         // Check profile plugins
         long profilePlugins = plugins.stream()
             .filter(plugin -> "jacoco".equals(plugin.profile()))
             .count();
-        assertEquals(2, profilePlugins);
+        assertEquals(1, profilePlugins);
 
         // Verify specific main plugin
         assertTrue(plugins.stream().anyMatch(plugin ->
@@ -166,15 +166,12 @@ class MavenDependencyServiceTest {
         // Test 'test' scope dependencies
         List<DependencyRecord> testDeps = service.getAllDependenciesByScope("test");
         assertNotNull(testDeps);
-        assertEquals(3, testDeps.size()); // mockito, junit, arquillian (derby was removed/replaced)
+        assertEquals(4, testDeps.size()); // mockito, junit, arquillian, derby
 
         assertTrue(testDeps.stream().allMatch(dep -> "test".equals(dep.scope())));
         assertTrue(testDeps.stream().anyMatch(dep ->
             "org.mockito".equals(dep.groupId()) &&
             "mockito-core".equals(dep.artifactId())));
-        assertTrue(testDeps.stream().anyMatch(dep ->
-            "jakarta-ee".equals(dep.profile()) &&
-            "test.profile".equals(dep.groupId())));
 
         // Test 'provided' scope dependencies
         List<DependencyRecord> providedDeps = service.getAllDependenciesByScope("provided");
@@ -197,9 +194,6 @@ class MavenDependencyServiceTest {
         // Test main POM dependency
         assertTrue(service.dependencyExists(null, "jakarta.platform", "jakarta.jakartaee-api"));
         assertTrue(service.dependencyExists("jakarta.platform", "jakarta.jakartaee-api"));
-
-        // Test profile dependency (updated to test.profile)
-        assertTrue(service.dependencyExists("jakarta-ee", "test.profile", "profile-artifact"));
 
         // Test non-existent dependency
         assertFalse(service.dependencyExists(null, "non.existent", "artifact"));
