@@ -3,6 +3,7 @@ package org.agoncal.sample.mcp.maven.pomxml;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.Plugin;
 import org.apache.maven.model.Profile;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
@@ -855,6 +856,73 @@ public class MavenDependencyService {
     }
 
     /**
+     * Removes an existing dependency from the dependencyManagement section of the Maven POM file.
+     *
+     * @param profileId the profile ID to remove the dependency from (null for main POM)
+     * @param groupId the group ID of the dependency
+     * @param artifactId the artifact ID of the dependency
+     * @throws IOException if there's an error reading/writing the POM file
+     * @throws XmlPullParserException if there's an error parsing the XML
+     * @throws IllegalArgumentException if the dependency doesn't exist or profile not found
+     */
+    public void removeDependencyManagementDependency(String profileId, String groupId, String artifactId)
+            throws IOException, XmlPullParserException {
+        log.info("Removing dependencyManagement dependency: " + groupId + ":" + artifactId +
+                (profileId != null ? " from profile: " + profileId : " from main POM"));
+        Model model = readModel();
+
+        if (profileId == null) {
+            // Remove from main POM dependencyManagement
+            if (model.getDependencyManagement() == null || model.getDependencyManagement().getDependencies().isEmpty()) {
+                throw new IllegalArgumentException("DependencyManagement dependency '" + groupId + ":" + artifactId + "' not found in main POM");
+            }
+
+            // Find and remove the dependency from main dependencyManagement
+            boolean removed = model.getDependencyManagement().getDependencies().removeIf(dep ->
+                groupId.equals(dep.getGroupId()) && artifactId.equals(dep.getArtifactId()));
+
+            if (!removed) {
+                throw new IllegalArgumentException("DependencyManagement dependency '" + groupId + ":" + artifactId + "' not found in main POM");
+            }
+        } else {
+            // Find the profile
+            Profile targetProfile = model.getProfiles().stream()
+                .filter(profile -> profile.getId().equals(profileId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Profile '" + profileId + "' not found"));
+
+            // Check if profile has dependencyManagement section and dependencies
+            if (targetProfile.getDependencyManagement() == null || targetProfile.getDependencyManagement().getDependencies().isEmpty()) {
+                throw new IllegalArgumentException("DependencyManagement dependency '" + groupId + ":" + artifactId + "' not found in profile '" + profileId + "'");
+            }
+
+            // Find and remove the dependency from profile dependencyManagement
+            boolean removed = targetProfile.getDependencyManagement().getDependencies().removeIf(dep ->
+                groupId.equals(dep.getGroupId()) && artifactId.equals(dep.getArtifactId()));
+
+            if (!removed) {
+                throw new IllegalArgumentException("DependencyManagement dependency '" + groupId + ":" + artifactId + "' not found in profile '" + profileId + "'");
+            }
+        }
+
+        writeModel(model);
+    }
+
+    /**
+     * Removes an existing dependency from the main Maven POM's dependencyManagement section.
+     * Convenience method that removes dependency from the main POM dependencyManagement (not from any profile).
+     *
+     * @param groupId the group ID of the dependency
+     * @param artifactId the artifact ID of the dependency
+     * @throws IOException if there's an error reading/writing the POM file
+     * @throws XmlPullParserException if there's an error parsing the XML
+     * @throws IllegalArgumentException if the dependency doesn't exist
+     */
+    public void removeDependencyManagementDependency(String groupId, String artifactId) throws IOException, XmlPullParserException {
+        removeDependencyManagementDependency(null, groupId, artifactId);
+    }
+
+    /**
      * Adds a new plugin to the build section of the Maven POM file.
      * Prevents adding duplicate plugins based on groupId and artifactId.
      *
@@ -887,7 +955,7 @@ public class MavenDependencyService {
                 throw new IllegalArgumentException("Plugin '" + groupId + ":" + artifactId + "' already exists in main POM");
             }
 
-            org.apache.maven.model.Plugin plugin = createPlugin(groupId, artifactId, version, inherited);
+            Plugin plugin = createPlugin(groupId, artifactId, version, inherited);
             model.getBuild().addPlugin(plugin);
         } else {
             // Find the profile
@@ -909,7 +977,7 @@ public class MavenDependencyService {
                 throw new IllegalArgumentException("Plugin '" + groupId + ":" + artifactId + "' already exists in profile '" + profileId + "'");
             }
 
-            org.apache.maven.model.Plugin plugin = createPlugin(groupId, artifactId, version, inherited);
+            Plugin plugin = createPlugin(groupId, artifactId, version, inherited);
             targetProfile.getBuild().addPlugin(plugin);
         }
 
@@ -967,10 +1035,96 @@ public class MavenDependencyService {
     }
 
     /**
+     * Removes an existing plugin from the Maven POM file.
+     *
+     * @param profileId the profile ID to remove the plugin from (null for main POM)
+     * @param groupId the group ID of the plugin
+     * @param artifactId the artifact ID of the plugin
+     * @throws IOException if there's an error reading/writing the POM file
+     * @throws XmlPullParserException if there's an error parsing the XML
+     * @throws IllegalArgumentException if the plugin doesn't exist or profile not found
+     */
+    public void removePlugin(String profileId, String groupId, String artifactId) throws IOException, XmlPullParserException {
+        log.info("Removing plugin: " + groupId + ":" + artifactId +
+                (profileId != null ? " from profile: " + profileId : " from main POM"));
+        Model model = readModel();
+
+        if (profileId == null) {
+            // Remove from main POM build section
+            if (model.getBuild() == null || model.getBuild().getPlugins().isEmpty()) {
+                throw new IllegalArgumentException("Plugin '" + groupId + ":" + artifactId + "' not found in main POM");
+            }
+
+            // Find and remove the plugin from main build
+            boolean removed = model.getBuild().getPlugins().removeIf(plugin -> {
+                // Handle null groupId case - Maven plugins default to org.apache.maven.plugins
+                String pluginGroupId = plugin.getGroupId();
+                if (pluginGroupId == null) {
+                    pluginGroupId = "org.apache.maven.plugins";
+                }
+                String targetGroupId = groupId;
+                if (targetGroupId == null) {
+                    targetGroupId = "org.apache.maven.plugins";
+                }
+                return targetGroupId.equals(pluginGroupId) && artifactId.equals(plugin.getArtifactId());
+            });
+
+            if (!removed) {
+                throw new IllegalArgumentException("Plugin '" + groupId + ":" + artifactId + "' not found in main POM");
+            }
+        } else {
+            // Find the profile
+            Profile targetProfile = model.getProfiles().stream()
+                .filter(profile -> profile.getId().equals(profileId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Profile '" + profileId + "' not found"));
+
+            // Check if profile has build section and plugins
+            if (targetProfile.getBuild() == null || targetProfile.getBuild().getPlugins().isEmpty()) {
+                throw new IllegalArgumentException("Plugin '" + groupId + ":" + artifactId + "' not found in profile '" + profileId + "'");
+            }
+
+            // Find and remove the plugin from profile build
+            boolean removed = targetProfile.getBuild().getPlugins().removeIf(plugin -> {
+                // Handle null groupId case - Maven plugins default to org.apache.maven.plugins
+                String pluginGroupId = plugin.getGroupId();
+                if (pluginGroupId == null) {
+                    pluginGroupId = "org.apache.maven.plugins";
+                }
+                String targetGroupId = groupId;
+                if (targetGroupId == null) {
+                    targetGroupId = "org.apache.maven.plugins";
+                }
+                return targetGroupId.equals(pluginGroupId) && artifactId.equals(plugin.getArtifactId());
+            });
+
+            if (!removed) {
+                throw new IllegalArgumentException("Plugin '" + groupId + ":" + artifactId + "' not found in profile '" + profileId + "'");
+            }
+        }
+
+        writeModel(model);
+    }
+
+    /**
+     * Removes an existing plugin from the main Maven POM file.
+     * Convenience method that removes plugin from the main POM (not from any profile).
+     *
+     * @param groupId the group ID of the plugin
+     * @param artifactId the artifact ID of the plugin
+     * @throws IOException if there's an error reading/writing the POM file
+     * @throws XmlPullParserException if there's an error parsing the XML
+     * @throws IllegalArgumentException if the plugin doesn't exist
+     */
+    public void removePlugin(String groupId, String artifactId) throws IOException, XmlPullParserException {
+        removePlugin(null, groupId, artifactId);
+    }
+
+    /**
      * Helper method to create a Plugin object with the specified parameters.
      */
-    private org.apache.maven.model.Plugin createPlugin(String groupId, String artifactId, String version, Boolean inherited) {
-        org.apache.maven.model.Plugin plugin = new org.apache.maven.model.Plugin();
+    private Plugin createPlugin(String groupId, String artifactId, String version, Boolean inherited) {
+        Plugin plugin = new Plugin();
         plugin.setGroupId(groupId);
         plugin.setArtifactId(artifactId);
         plugin.setVersion(version);
