@@ -25,18 +25,24 @@ public class MavenDependencyService {
 
     private static final Logger log = Logger.getLogger(MavenDependencyService.class);
     private static final String DEFAULT_POM_XML_PATH = "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration/mcp-maven-pomxml/src/test/resources/pomee6.xml";
-    private static final Path POM_XML_PATH = Paths.get(
-        Optional.ofNullable(System.getenv("POM_XML_PATH")).orElse(DEFAULT_POM_XML_PATH)
-    ).toAbsolutePath();
     private static final MavenXpp3Reader reader = new MavenXpp3Reader();
     private static final MavenXpp3Writer writer = new MavenXpp3Writer();
+
+    /**
+     * Gets the path to the POM file. Can be overridden by subclasses.
+     * 
+     * @return Path to the POM XML file
+     */
+    protected Path getPomPath() {
+        return Paths.get(Optional.ofNullable(System.getenv("POM_XML_PATH")).orElse(DEFAULT_POM_XML_PATH)).toAbsolutePath();
+    }
 
     /**
      * Retrieves all dependencies from the Maven POM file.
      * This includes dependencies from the main project and all profiles.
      *
      * @return List of DependencyRecord objects representing all dependencies
-     * @throws IOException if there's an error reading the POM file
+     * @throws IOException            if there's an error reading the POM file
      * @throws XmlPullParserException if there's an error parsing the XML
      */
     public List<DependencyRecord> getAllDependencies() throws IOException, XmlPullParserException {
@@ -72,7 +78,7 @@ public class MavenDependencyService {
      * This includes dependencyManagement from the main project and all profiles.
      *
      * @return List of DependencyRecord objects from dependencyManagement
-     * @throws IOException if there's an error reading the POM file
+     * @throws IOException            if there's an error reading the POM file
      * @throws XmlPullParserException if there's an error parsing the XML
      */
     public List<DependencyRecord> getAllDependencyManagementDependencies() throws IOException, XmlPullParserException {
@@ -114,20 +120,20 @@ public class MavenDependencyService {
      * Adds a new dependency to the Maven POM file.
      * Prevents adding duplicate dependencies based on groupId and artifactId.
      *
-     * @param profileId the profile ID to add the dependency to (null for main POM)
-     * @param groupId the group ID of the dependency
+     * @param profileId  the profile ID to add the dependency to (null for main POM)
+     * @param groupId    the group ID of the dependency
      * @param artifactId the artifact ID of the dependency
-     * @param version the version of the dependency
-     * @param type the type of the dependency (optional, defaults to jar)
-     * @param scope the scope of the dependency (optional, defaults to compile)
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @param version    the version of the dependency
+     * @param type       the type of the dependency (optional, defaults to jar)
+     * @param scope      the scope of the dependency (optional, defaults to compile)
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the dependency already exists or profile not found
      */
     public void addDependency(String profileId, String groupId, String artifactId, String version, String type, String scope)
-            throws IOException, XmlPullParserException {
+        throws IOException, XmlPullParserException {
         log.info("Adding dependency: " + groupId + ":" + artifactId + ":" + version +
-                (profileId != null ? " to profile: " + profileId : " to main POM"));
+            (profileId != null ? " to profile: " + profileId : " to main POM"));
         Model model = readModel();
 
         if (profileId == null) {
@@ -167,17 +173,17 @@ public class MavenDependencyService {
      * Adds a new dependency to the main Maven POM file.
      * Convenience method that adds dependency to the main POM (not to any profile).
      *
-     * @param groupId the group ID of the dependency
+     * @param groupId    the group ID of the dependency
      * @param artifactId the artifact ID of the dependency
-     * @param version the version of the dependency
-     * @param type the type of the dependency (optional, defaults to jar)
-     * @param scope the scope of the dependency (optional, defaults to compile)
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @param version    the version of the dependency
+     * @param type       the type of the dependency (optional, defaults to jar)
+     * @param scope      the scope of the dependency (optional, defaults to compile)
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the dependency already exists
      */
     public void addDependency(String groupId, String artifactId, String version, String type, String scope)
-            throws IOException, XmlPullParserException {
+        throws IOException, XmlPullParserException {
         addDependency(null, groupId, artifactId, version, type, scope);
     }
 
@@ -201,18 +207,18 @@ public class MavenDependencyService {
     /**
      * Updates the version of an existing dependency.
      *
-     * @param profileId the profile ID to update the dependency in (null for main POM)
-     * @param groupId the group ID of the dependency to update
+     * @param profileId  the profile ID to update the dependency in (null for main POM)
+     * @param groupId    the group ID of the dependency to update
      * @param artifactId the artifact ID of the dependency to update
      * @param newVersion the new version to set
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the dependency doesn't exist or profile not found
      */
     public void updateDependencyVersion(String profileId, String groupId, String artifactId, String newVersion)
-            throws IOException, XmlPullParserException {
+        throws IOException, XmlPullParserException {
         log.info("Updating dependency version: " + groupId + ":" + artifactId + " to " + newVersion +
-                (profileId != null ? " in profile: " + profileId : " in main POM"));
+            (profileId != null ? " in profile: " + profileId : " in main POM"));
         Model model = readModel();
 
         boolean found = false;
@@ -258,31 +264,31 @@ public class MavenDependencyService {
      * Updates the version of an existing dependency in the main Maven POM file.
      * Convenience method that updates dependency in the main POM (not in any profile).
      *
-     * @param groupId the group ID of the dependency to update
+     * @param groupId    the group ID of the dependency to update
      * @param artifactId the artifact ID of the dependency to update
      * @param newVersion the new version to set
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the dependency doesn't exist
      */
     public void updateDependencyVersion(String groupId, String artifactId, String newVersion)
-            throws IOException, XmlPullParserException {
+        throws IOException, XmlPullParserException {
         updateDependencyVersion(null, groupId, artifactId, newVersion);
     }
 
     /**
      * Removes an existing dependency from the Maven POM file.
      *
-     * @param profileId the profile ID to remove the dependency from (null for main POM)
-     * @param groupId the group ID of the dependency to remove
+     * @param profileId  the profile ID to remove the dependency from (null for main POM)
+     * @param groupId    the group ID of the dependency to remove
      * @param artifactId the artifact ID of the dependency to remove
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the dependency doesn't exist or profile not found
      */
     public void removeDependency(String profileId, String groupId, String artifactId) throws IOException, XmlPullParserException {
         log.info("Removing dependency: " + groupId + ":" + artifactId +
-                (profileId != null ? " from profile: " + profileId : " from main POM"));
+            (profileId != null ? " from profile: " + profileId : " from main POM"));
         Model model = readModel();
 
         if (profileId == null) {
@@ -330,10 +336,10 @@ public class MavenDependencyService {
      * Removes an existing dependency from the main Maven POM file.
      * Convenience method that removes dependency from the main POM (not from any profile).
      *
-     * @param groupId the group ID of the dependency to remove
+     * @param groupId    the group ID of the dependency to remove
      * @param artifactId the artifact ID of the dependency to remove
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the dependency doesn't exist
      */
     public void removeDependency(String groupId, String artifactId) throws IOException, XmlPullParserException {
@@ -343,12 +349,12 @@ public class MavenDependencyService {
     /**
      * Checks if a dependency exists in the Maven POM file.
      *
-     * @param profileId the profile ID to check in (null for main POM)
-     * @param groupId the group ID to check for
+     * @param profileId  the profile ID to check in (null for main POM)
+     * @param groupId    the group ID to check for
      * @param artifactId the artifact ID to check for
      * @return true if the dependency exists, false otherwise
-     * @throws IOException if there's an error reading the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @throws IOException              if there's an error reading the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the profile doesn't exist
      */
     public boolean dependencyExists(String profileId, String groupId, String artifactId) throws IOException, XmlPullParserException {
@@ -375,10 +381,10 @@ public class MavenDependencyService {
      * Checks if a dependency exists in the main Maven POM file.
      * Convenience method that checks dependency in the main POM (not in any profile).
      *
-     * @param groupId the group ID to check for
+     * @param groupId    the group ID to check for
      * @param artifactId the artifact ID to check for
      * @return true if the dependency exists, false otherwise
-     * @throws IOException if there's an error reading the POM file
+     * @throws IOException            if there's an error reading the POM file
      * @throws XmlPullParserException if there's an error parsing the XML
      */
     public boolean dependencyExists(String groupId, String artifactId) throws IOException, XmlPullParserException {
@@ -388,14 +394,14 @@ public class MavenDependencyService {
     /**
      * Finds a specific dependency by groupId and artifactId.
      *
-     * @param groupId the group ID to search for
+     * @param groupId    the group ID to search for
      * @param artifactId the artifact ID to search for
      * @return Optional containing the DependencyRecord if found, empty otherwise
-     * @throws IOException if there's an error reading the POM file
+     * @throws IOException            if there's an error reading the POM file
      * @throws XmlPullParserException if there's an error parsing the XML
      */
     public Optional<DependencyRecord> findDependency(String groupId, String artifactId)
-            throws IOException, XmlPullParserException {
+        throws IOException, XmlPullParserException {
         Model model = readModel();
 
         return model.getDependencies().stream()
@@ -414,7 +420,7 @@ public class MavenDependencyService {
      *
      * @param scope the scope to filter by (e.g., "test", "provided", "compile")
      * @return List of dependencies with the specified scope from main POM and all profiles
-     * @throws IOException if there's an error reading the POM file
+     * @throws IOException            if there's an error reading the POM file
      * @throws XmlPullParserException if there's an error parsing the XML
      */
     public List<DependencyRecord> getAllDependenciesByScope(String scope) throws IOException, XmlPullParserException {
@@ -463,7 +469,7 @@ public class MavenDependencyService {
      * This includes properties from the main project and all profiles.
      *
      * @return List of PropertyRecord objects representing all properties
-     * @throws IOException if there's an error reading the POM file
+     * @throws IOException            if there's an error reading the POM file
      * @throws XmlPullParserException if there's an error parsing the XML
      */
     public List<PropertyRecord> getAllProperties() throws IOException, XmlPullParserException {
@@ -494,7 +500,7 @@ public class MavenDependencyService {
      * This includes dependencyManagement from the main project and all profiles.
      *
      * @return List of DependencyRecord objects from all dependencyManagement sections
-     * @throws IOException if there's an error reading the POM file
+     * @throws IOException            if there's an error reading the POM file
      * @throws XmlPullParserException if there's an error parsing the XML
      */
     public List<DependencyRecord> getAllDependencyManagement() throws IOException, XmlPullParserException {
@@ -536,7 +542,7 @@ public class MavenDependencyService {
      * Retrieves all profiles from the Maven POM file.
      *
      * @return List of ProfileRecord objects representing all profiles
-     * @throws IOException if there's an error reading the POM file
+     * @throws IOException            if there's an error reading the POM file
      * @throws XmlPullParserException if there's an error parsing the XML
      */
     public List<ProfileRecord> getAllProfiles() throws IOException, XmlPullParserException {
@@ -553,7 +559,7 @@ public class MavenDependencyService {
      * This includes plugins from the main project build section and all profiles.
      *
      * @return List of PluginRecord objects representing all plugins
-     * @throws IOException if there's an error reading the POM file
+     * @throws IOException            if there's an error reading the POM file
      * @throws XmlPullParserException if there's an error parsing the XML
      */
     public List<PluginRecord> getAllPlugins() throws IOException, XmlPullParserException {
@@ -617,14 +623,14 @@ public class MavenDependencyService {
      * Removes an existing property from the Maven POM file.
      *
      * @param profileId the profile ID to remove the property from (null for main POM)
-     * @param key the property key to remove
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @param key       the property key to remove
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the property doesn't exist or profile not found
      */
     public void removeProperty(String profileId, String key) throws IOException, XmlPullParserException {
         log.info("Removing property: " + key +
-                (profileId != null ? " from profile: " + profileId : " from main POM"));
+            (profileId != null ? " from profile: " + profileId : " from main POM"));
         Model model = readModel();
 
         if (profileId == null) {
@@ -655,8 +661,8 @@ public class MavenDependencyService {
      * Convenience method that removes property from the main POM (not from any profile).
      *
      * @param key the property key to remove
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the property doesn't exist
      */
     public void removeProperty(String key) throws IOException, XmlPullParserException {
@@ -667,15 +673,15 @@ public class MavenDependencyService {
      * Updates the value of an existing property in the Maven POM file.
      *
      * @param profileId the profile ID to update the property in (null for main POM)
-     * @param key the property key to update
-     * @param value the new property value
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @param key       the property key to update
+     * @param value     the new property value
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the property doesn't exist or profile not found
      */
     public void updatePropertyValue(String profileId, String key, String value) throws IOException, XmlPullParserException {
         log.info("Updating property: " + key + " to " + value +
-                (profileId != null ? " in profile: " + profileId : " in main POM"));
+            (profileId != null ? " in profile: " + profileId : " in main POM"));
         Model model = readModel();
 
         if (profileId == null) {
@@ -705,10 +711,10 @@ public class MavenDependencyService {
      * Updates the value of an existing property in the main Maven POM file.
      * Convenience method that updates property in the main POM (not in any profile).
      *
-     * @param key the property key to update
+     * @param key   the property key to update
      * @param value the new property value
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the property doesn't exist
      */
     public void updatePropertyValue(String key, String value) throws IOException, XmlPullParserException {
@@ -720,15 +726,15 @@ public class MavenDependencyService {
      * Prevents adding duplicate properties based on the property key.
      *
      * @param profileId the profile ID to add the property to (null for main POM)
-     * @param key the property key to add
-     * @param value the property value to add
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @param key       the property key to add
+     * @param value     the property value to add
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the property already exists or profile not found
      */
     public void addProperty(String profileId, String key, String value) throws IOException, XmlPullParserException {
         log.info("Adding property: " + key + " = " + value +
-                (profileId != null ? " to profile: " + profileId : " to main POM"));
+            (profileId != null ? " to profile: " + profileId : " to main POM"));
         Model model = readModel();
 
         if (profileId == null) {
@@ -764,10 +770,10 @@ public class MavenDependencyService {
      * Adds a new property to the main Maven POM file.
      * Convenience method that adds property to the main POM (not to any profile).
      *
-     * @param key the property key to add
+     * @param key   the property key to add
      * @param value the property value to add
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the property already exists
      */
     public void addProperty(String key, String value) throws IOException, XmlPullParserException {
@@ -778,20 +784,20 @@ public class MavenDependencyService {
      * Adds a new dependency to the dependencyManagement section of the Maven POM file.
      * Prevents adding duplicate dependencies based on groupId and artifactId.
      *
-     * @param profileId the profile ID to add the dependency to (null for main POM)
-     * @param groupId the group ID of the dependency
+     * @param profileId  the profile ID to add the dependency to (null for main POM)
+     * @param groupId    the group ID of the dependency
      * @param artifactId the artifact ID of the dependency
-     * @param version the version of the dependency
-     * @param type the type of the dependency (optional, defaults to jar)
-     * @param scope the scope of the dependency (optional, defaults to compile)
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @param version    the version of the dependency
+     * @param type       the type of the dependency (optional, defaults to jar)
+     * @param scope      the scope of the dependency (optional, defaults to compile)
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the dependency already exists or profile not found
      */
     public void addDependencyManagementDependency(String profileId, String groupId, String artifactId, String version, String type, String scope)
-            throws IOException, XmlPullParserException {
+        throws IOException, XmlPullParserException {
         log.info("Adding dependencyManagement dependency: " + groupId + ":" + artifactId + ":" + version +
-                (profileId != null ? " to profile: " + profileId : " to main POM"));
+            (profileId != null ? " to profile: " + profileId : " to main POM"));
         Model model = readModel();
 
         if (profileId == null) {
@@ -841,34 +847,34 @@ public class MavenDependencyService {
      * Adds a new dependency to the main Maven POM's dependencyManagement section.
      * Convenience method that adds dependency to the main POM dependencyManagement (not to any profile).
      *
-     * @param groupId the group ID of the dependency
+     * @param groupId    the group ID of the dependency
      * @param artifactId the artifact ID of the dependency
-     * @param version the version of the dependency
-     * @param type the type of the dependency (optional, defaults to jar)
-     * @param scope the scope of the dependency (optional, defaults to compile)
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @param version    the version of the dependency
+     * @param type       the type of the dependency (optional, defaults to jar)
+     * @param scope      the scope of the dependency (optional, defaults to compile)
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the dependency already exists
      */
     public void addDependencyManagementDependency(String groupId, String artifactId, String version, String type, String scope)
-            throws IOException, XmlPullParserException {
+        throws IOException, XmlPullParserException {
         addDependencyManagementDependency(null, groupId, artifactId, version, type, scope);
     }
 
     /**
      * Removes an existing dependency from the dependencyManagement section of the Maven POM file.
      *
-     * @param profileId the profile ID to remove the dependency from (null for main POM)
-     * @param groupId the group ID of the dependency
+     * @param profileId  the profile ID to remove the dependency from (null for main POM)
+     * @param groupId    the group ID of the dependency
      * @param artifactId the artifact ID of the dependency
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the dependency doesn't exist or profile not found
      */
     public void removeDependencyManagementDependency(String profileId, String groupId, String artifactId)
-            throws IOException, XmlPullParserException {
+        throws IOException, XmlPullParserException {
         log.info("Removing dependencyManagement dependency: " + groupId + ":" + artifactId +
-                (profileId != null ? " from profile: " + profileId : " from main POM"));
+            (profileId != null ? " from profile: " + profileId : " from main POM"));
         Model model = readModel();
 
         if (profileId == null) {
@@ -912,10 +918,10 @@ public class MavenDependencyService {
      * Removes an existing dependency from the main Maven POM's dependencyManagement section.
      * Convenience method that removes dependency from the main POM dependencyManagement (not from any profile).
      *
-     * @param groupId the group ID of the dependency
+     * @param groupId    the group ID of the dependency
      * @param artifactId the artifact ID of the dependency
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the dependency doesn't exist
      */
     public void removeDependencyManagementDependency(String groupId, String artifactId) throws IOException, XmlPullParserException {
@@ -926,19 +932,19 @@ public class MavenDependencyService {
      * Adds a new plugin to the build section of the Maven POM file.
      * Prevents adding duplicate plugins based on groupId and artifactId.
      *
-     * @param profileId the profile ID to add the plugin to (null for main POM)
-     * @param groupId the group ID of the plugin
+     * @param profileId  the profile ID to add the plugin to (null for main POM)
+     * @param groupId    the group ID of the plugin
      * @param artifactId the artifact ID of the plugin
-     * @param version the version of the plugin
-     * @param inherited whether the plugin is inherited (optional, defaults to true)
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @param version    the version of the plugin
+     * @param inherited  whether the plugin is inherited (optional, defaults to true)
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the plugin already exists or profile not found
      */
     public void addPlugin(String profileId, String groupId, String artifactId, String version, Boolean inherited)
-            throws IOException, XmlPullParserException {
+        throws IOException, XmlPullParserException {
         log.info("Adding plugin: " + groupId + ":" + artifactId + ":" + version +
-                (profileId != null ? " to profile: " + profileId : " to main POM"));
+            (profileId != null ? " to profile: " + profileId : " to main POM"));
         Model model = readModel();
 
         if (profileId == null) {
@@ -1010,16 +1016,16 @@ public class MavenDependencyService {
      * Adds a new plugin to the main Maven POM's build section.
      * Convenience method that adds plugin to the main POM build (not to any profile).
      *
-     * @param groupId the group ID of the plugin
+     * @param groupId    the group ID of the plugin
      * @param artifactId the artifact ID of the plugin
-     * @param version the version of the plugin
-     * @param inherited whether the plugin is inherited (optional, defaults to true)
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @param version    the version of the plugin
+     * @param inherited  whether the plugin is inherited (optional, defaults to true)
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the plugin already exists
      */
     public void addPlugin(String groupId, String artifactId, String version, Boolean inherited)
-            throws IOException, XmlPullParserException {
+        throws IOException, XmlPullParserException {
         addPlugin(null, groupId, artifactId, version, inherited);
     }
 
@@ -1027,16 +1033,16 @@ public class MavenDependencyService {
      * Adds a new plugin to the build section with default inheritance (true).
      * Convenience method for adding plugins without specifying inheritance.
      *
-     * @param profileId the profile ID to add the plugin to (null for main POM)
-     * @param groupId the group ID of the plugin
+     * @param profileId  the profile ID to add the plugin to (null for main POM)
+     * @param groupId    the group ID of the plugin
      * @param artifactId the artifact ID of the plugin
-     * @param version the version of the plugin
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @param version    the version of the plugin
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the plugin already exists or profile not found
      */
     public void addPlugin(String profileId, String groupId, String artifactId, String version)
-            throws IOException, XmlPullParserException {
+        throws IOException, XmlPullParserException {
         addPlugin(profileId, groupId, artifactId, version, null);
     }
 
@@ -1044,31 +1050,31 @@ public class MavenDependencyService {
      * Adds a new plugin to the main POM's build section with default inheritance (true).
      * Convenience method for adding plugins to main POM without specifying inheritance.
      *
-     * @param groupId the group ID of the plugin
+     * @param groupId    the group ID of the plugin
      * @param artifactId the artifact ID of the plugin
-     * @param version the version of the plugin
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @param version    the version of the plugin
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the plugin already exists
      */
     public void addPlugin(String groupId, String artifactId, String version)
-            throws IOException, XmlPullParserException {
+        throws IOException, XmlPullParserException {
         addPlugin(null, groupId, artifactId, version, null);
     }
 
     /**
      * Removes an existing plugin from the Maven POM file.
      *
-     * @param profileId the profile ID to remove the plugin from (null for main POM)
-     * @param groupId the group ID of the plugin
+     * @param profileId  the profile ID to remove the plugin from (null for main POM)
+     * @param groupId    the group ID of the plugin
      * @param artifactId the artifact ID of the plugin
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the plugin doesn't exist or profile not found
      */
     public void removePlugin(String profileId, String groupId, String artifactId) throws IOException, XmlPullParserException {
         log.info("Removing plugin: " + groupId + ":" + artifactId +
-                (profileId != null ? " from profile: " + profileId : " from main POM"));
+            (profileId != null ? " from profile: " + profileId : " from main POM"));
         Model model = readModel();
 
         if (profileId == null) {
@@ -1132,10 +1138,10 @@ public class MavenDependencyService {
      * Removes an existing plugin from the main Maven POM file.
      * Convenience method that removes plugin from the main POM (not from any profile).
      *
-     * @param groupId the group ID of the plugin
+     * @param groupId    the group ID of the plugin
      * @param artifactId the artifact ID of the plugin
-     * @throws IOException if there's an error reading/writing the POM file
-     * @throws XmlPullParserException if there's an error parsing the XML
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the plugin doesn't exist
      */
     public void removePlugin(String groupId, String artifactId) throws IOException, XmlPullParserException {
@@ -1157,13 +1163,15 @@ public class MavenDependencyService {
     }
 
     private Model readModel() throws IOException, XmlPullParserException {
-        try (InputStreamReader inputStreamReader = new InputStreamReader(Files.newInputStream(POM_XML_PATH))) {
+        Path pomXmlPath = getPomPath();
+        try (InputStreamReader inputStreamReader = new InputStreamReader(Files.newInputStream(pomXmlPath))) {
             return reader.read(inputStreamReader);
         }
     }
 
     private void writeModel(Model model) throws IOException {
-        try (OutputStream outputStream = Files.newOutputStream(POM_XML_PATH)) {
+        Path pomXmlPath = getPomPath();
+        try (OutputStream outputStream = Files.newOutputStream(pomXmlPath)) {
             writer.write(outputStream, model);
         }
     }
