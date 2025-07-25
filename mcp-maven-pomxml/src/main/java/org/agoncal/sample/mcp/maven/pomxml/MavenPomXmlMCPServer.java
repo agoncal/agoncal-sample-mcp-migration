@@ -101,18 +101,18 @@ public class MavenPomXmlMCPServer {
             return ToolResponse.success("No plugins in the pom.xml file.");
         }
 
-        // Builds the list of plugins PluginRecord from model.getBuild().getPlugins(). It also retrieves the dependencies of each plugin if they exist.
+        // Builds the list of plugins with their dependencies
         List<PluginRecord> plugins = model.getBuild().getPlugins().stream()
             .map(plugin -> {
                 List<DependencyRecord> dependencies = plugin.getDependencies() != null ? plugin.getDependencies().stream()
-                    .map(dependency -> new DependencyRecord(
+                    .map(dependency -> new DependencyRecord(null,
                         dependency.getGroupId(),
                         dependency.getArtifactId(),
                         dependency.getVersion(),
                         dependency.getType(),
                         dependency.getScope()))
                     .collect(Collectors.toList()) : List.of();
-                return new PluginRecord(
+                return new PluginRecord(null,
                     plugin.getGroupId(),
                     plugin.getArtifactId(),
                     plugin.getVersion(),
@@ -218,11 +218,12 @@ public class MavenPomXmlMCPServer {
     }
 
     @Tool(name = "gets_all_the_dependencies", description = """
-        This method returns all existing dependencies from a Maven pom.xml file. This method parses the XML structure of the POM file, locates the <dependencies> section, and retrieves all dependency defined within it.
+        This method returns all existing dependencies from a Maven pom.xml file. This means the dependencies in the main project but also all the dependencies for all profiles. This method parses the XML structure of the POM file, locates the <dependencies> sections in the main and in the profiles, and retrieves all dependency defined within it.
 
         Example usage:
-        - Input: pom.xml file containing dependencies like <dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version><scope>provided</scope></dependency>
-        - Output: Collection containing: {"groupId": "jakarta.platform", "artifactId": "jakarta.jakartaee-api", "version": "${version.jakarta.ee}", "scope": "provided"}
+        - Input: pom.xml file containing dependencies like <dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version><scope>provided</scope></dependency>    <profile><id>jakarta-ee</id><dependencies><dependency><groupId>org.apache.derby</groupId><artifactId>derby</artifactId><version>${version.derby}</version><scope>test</scope></dependency></dependencies></profile>
+
+        - Output: Collection containing: {"groupId": "jakarta.platform", "artifactId": "jakarta.jakartaee-api", "version": "${version.jakarta.ee}", "scope": "provided", "profile": "jakarta-ee", "groupId": :"org.apache.derby", "artifactId": "derby", "version": "${version.derby}", "scope": "test"}
 
         The method handles XML parsing automatically and returns an empty collection if no <dependencies> section exists in the pom.xml file. It reads the file without modifying it.
         """,
@@ -240,13 +241,25 @@ public class MavenPomXmlMCPServer {
 
         // Builds the list of dependencies
         List<DependencyRecord> dependencies = model.getDependencies().stream()
-            .map(dependency -> new DependencyRecord(
+            .map(dependency -> new DependencyRecord(null,
                 dependency.getGroupId(),
                 dependency.getArtifactId(),
                 dependency.getVersion(),
                 dependency.getType(),
                 dependency.getScope()))
             .collect(Collectors.toList());
+
+        // Builds the list of dependencies for each profile
+        model.getProfiles().forEach(profile -> {
+            profile.getDependencies().stream()
+                .map(dependency -> new DependencyRecord(profile.getId(),
+                    dependency.getGroupId(),
+                    dependency.getArtifactId(),
+                    dependency.getVersion(),
+                    dependency.getType(),
+                    dependency.getScope()))
+                .forEach(dependencies::add);
+        });
 
         return ToolResponse.success(toJson(dependencies));
     }
@@ -404,7 +417,7 @@ public class MavenPomXmlMCPServer {
 
         // Builds the list of dependencies
         List<DependencyRecord> dependencies = model.getDependencyManagement().getDependencies().stream()
-            .map(dependency -> new DependencyRecord(
+            .map(dependency -> new DependencyRecord(null,
                 dependency.getGroupId(),
                 dependency.getArtifactId(),
                 dependency.getVersion(),
@@ -438,7 +451,7 @@ public class MavenPomXmlMCPServer {
 
         // Builds the list of properties
         List<PropertyRecord> properties = model.getProperties().entrySet().stream()
-            .map(entry -> new PropertyRecord((String) entry.getKey(), (String) entry.getValue()))
+            .map(entry -> new PropertyRecord(null, (String) entry.getKey(), (String) entry.getValue()))
             .collect(Collectors.toList());
 
         return ToolResponse.success(toJson(properties));
@@ -563,15 +576,3 @@ public class MavenPomXmlMCPServer {
     }
 }
 
-record PropertyRecord(String key, String value) {
-}
-
-record DependencyRecord(String groupId, String artifactId, String version, String type, String scope) {
-}
-
-record PluginRecord(String groupId, String artifactId, String version, String inherited,
-                    List<DependencyRecord> dependencies) {
-}
-
-record ProfileRecord(String id) {
-}
