@@ -28,9 +28,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class MavenPomXmlMCPServer {
+public class MavenDependencyMCPServer {
 
-    private static final Logger log = Logger.getLogger(MavenPomXmlMCPServer.class);
+    private static final Logger log = Logger.getLogger(MavenDependencyMCPServer.class);
     private static final String DEFAULT_POM_XML_PATH = "/Users/agoncal/Documents/Code/AGoncal/agoncal-sample-mcp-migration/mcp-maven-pomxml/src/test/resources/pomee6.xml";
     private static final Path POM_XML_PATH = Paths.get(
         Optional.ofNullable(System.getenv("POM_XML_PATH")).orElse(DEFAULT_POM_XML_PATH)
