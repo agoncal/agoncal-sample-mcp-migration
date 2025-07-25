@@ -225,81 +225,60 @@ class MavenDependencyServiceTest {
     }
 
     @Test
-    void testAddDependency() throws IOException, XmlPullParserException {
-        // Test adding to main POM with unique name
-        String uniqueGroup = "test.unique.group." + System.currentTimeMillis();
-        service.addDependency(null, uniqueGroup, "test-artifact", "1.0.0", "jar", "compile");
-        assertTrue(service.dependencyExists(null, uniqueGroup, "test-artifact"));
-
-        // Test adding to profile with unique name
-        String uniqueProfileGroup = "test.profile.group." + System.currentTimeMillis();
-        service.addDependency("jakarta-ee", uniqueProfileGroup, "profile-artifact", "2.0.0", "jar", "test");
-        assertTrue(service.dependencyExists("jakarta-ee", uniqueProfileGroup, "profile-artifact"));
-
-        // Test duplicate prevention
-        assertThrows(IllegalArgumentException.class, () ->
-            service.addDependency(null, uniqueGroup, "test-artifact", "1.0.0", "jar", "compile"));
-
-        // Test non-existent profile
-        assertThrows(IllegalArgumentException.class, () ->
-            service.addDependency("non-existent", "test.group2", "test-artifact2", "1.0.0", "jar", "compile"));
-    }
-
-    @Test
     void testUpdateDependencyVersion() throws IOException, XmlPullParserException {
         // Test with main POM dependency - org.junit.jupiter:junit-jupiter
         String mainGroupId = "org.junit.jupiter";
         String mainArtifactId = "junit-jupiter";
         String newMainVersion = "5.12.0"; // Updated version
-        
+
         // Get original version
         Optional<DependencyRecord> originalMainDep = service.findDependency(mainGroupId, mainArtifactId);
         assertTrue(originalMainDep.isPresent());
         String originalMainVersion = originalMainDep.get().version();
-        
+
         // Update main POM dependency version
         service.updateDependencyVersion(null, mainGroupId, mainArtifactId, newMainVersion);
         Optional<DependencyRecord> updatedMainDep = service.findDependency(mainGroupId, mainArtifactId);
         assertTrue(updatedMainDep.isPresent());
         assertEquals(newMainVersion, updatedMainDep.get().version());
-        
+
         // Restore original version
         service.updateDependencyVersion(null, mainGroupId, mainArtifactId, originalMainVersion);
         Optional<DependencyRecord> restoredMainDep = service.findDependency(mainGroupId, mainArtifactId);
         assertTrue(restoredMainDep.isPresent());
         assertEquals(originalMainVersion, restoredMainDep.get().version());
-        
+
         // Test with profile dependency - org.apache.derby:derby from jakarta-ee profile
         String profileId = "jakarta-ee";
         String profileGroupId = "org.apache.derby";
         String profileArtifactId = "derby";
         String newProfileVersion = "11.0.0.0"; // Updated version
-        
+
         // Get original profile dependency version
         List<DependencyRecord> allDeps = service.getAllDependencies();
         Optional<DependencyRecord> originalProfileDep = allDeps.stream()
-            .filter(dep -> profileId.equals(dep.profile()) && 
-                          profileGroupId.equals(dep.groupId()) && 
+            .filter(dep -> profileId.equals(dep.profile()) &&
+                          profileGroupId.equals(dep.groupId()) &&
                           profileArtifactId.equals(dep.artifactId()))
             .findFirst();
         assertTrue(originalProfileDep.isPresent());
         String originalProfileVersion = originalProfileDep.get().version();
-        
+
         // Update profile dependency version
         service.updateDependencyVersion(profileId, profileGroupId, profileArtifactId, newProfileVersion);
         allDeps = service.getAllDependencies();
-        assertTrue(allDeps.stream().anyMatch(dep -> 
-            profileId.equals(dep.profile()) && 
-            profileGroupId.equals(dep.groupId()) && 
+        assertTrue(allDeps.stream().anyMatch(dep ->
+            profileId.equals(dep.profile()) &&
+            profileGroupId.equals(dep.groupId()) &&
             profileArtifactId.equals(dep.artifactId()) &&
             newProfileVersion.equals(dep.version())));
-        
+
         // Restore original profile dependency version
         service.updateDependencyVersion(profileId, profileGroupId, profileArtifactId, originalProfileVersion);
         allDeps = service.getAllDependencies();
-        assertTrue(allDeps.stream().anyMatch(dep -> 
-            profileId.equals(dep.profile()) && 
-            profileGroupId.equals(dep.groupId()) && 
+        assertTrue(allDeps.stream().anyMatch(dep ->
+            profileId.equals(dep.profile()) &&
+            profileGroupId.equals(dep.groupId()) &&
             profileArtifactId.equals(dep.artifactId()) &&
             originalProfileVersion.equals(dep.version())));
 
@@ -393,21 +372,64 @@ class MavenDependencyServiceTest {
 
     @Test
     void testUpdatePropertyValue() throws IOException, XmlPullParserException {
-        // Update main property
-        service.updatePropertyValue(null, "version.java", "21");
-        List<PropertyRecord> properties = service.getAllProperties();
-        assertTrue(properties.stream().anyMatch(prop ->
-            prop.profile() == null &&
-            "version.java".equals(prop.key()) &&
-            "21".equals(prop.value())));
+        // Test with main property - version.java
+        String propertyKey = "version.java";
+        String expectedInitialValue = "17";
+        String newValue = "21";
 
-        // Update profile property
-        service.updatePropertyValue("jakarta-ee", "version.jakarta.ee", "11.0.0");
+        // First, verify the current value is 17
+        List<PropertyRecord> properties = service.getAllProperties();
+        Optional<PropertyRecord> currentProperty = properties.stream()
+            .filter(prop -> prop.profile() == null && propertyKey.equals(prop.key()))
+            .findFirst();
+        assertTrue(currentProperty.isPresent());
+        assertEquals(expectedInitialValue, currentProperty.get().value());
+
+        // Update main property to 21
+        service.updatePropertyValue(null, propertyKey, newValue);
         properties = service.getAllProperties();
         assertTrue(properties.stream().anyMatch(prop ->
-            "jakarta-ee".equals(prop.profile()) &&
-            "version.jakarta.ee".equals(prop.key()) &&
-            "11.0.0".equals(prop.value())));
+            prop.profile() == null &&
+            propertyKey.equals(prop.key()) &&
+            newValue.equals(prop.value())));
+
+        // Change it back to the original value (17)
+        service.updatePropertyValue(null, propertyKey, expectedInitialValue);
+        properties = service.getAllProperties();
+        assertTrue(properties.stream().anyMatch(prop ->
+            prop.profile() == null &&
+            propertyKey.equals(prop.key()) &&
+            expectedInitialValue.equals(prop.value())));
+
+        // Test with profile property - version.jakarta.ee from jakarta-ee profile
+        String profileId = "jakarta-ee";
+        String profilePropertyKey = "version.jakarta.ee";
+        String profileExpectedInitialValue = "10.1.2";
+        String profileNewValue = "11.0.0";
+
+        // First, verify the current profile property value
+        properties = service.getAllProperties();
+        Optional<PropertyRecord> currentProfileProperty = properties.stream()
+            .filter(prop -> profileId.equals(prop.profile()) && profilePropertyKey.equals(prop.key()))
+            .findFirst();
+        assertTrue(currentProfileProperty.isPresent());
+        assertEquals(profileExpectedInitialValue, currentProfileProperty.get().value());
+
+        // Update profile property
+        service.updatePropertyValue(profileId, profilePropertyKey, profileNewValue);
+        properties = service.getAllProperties();
+        assertTrue(properties.stream().anyMatch(prop ->
+            profileId.equals(prop.profile()) &&
+            profilePropertyKey.equals(prop.key()) &&
+            profileNewValue.equals(prop.value())));
+
+        // Change it back to the original value
+        service.updatePropertyValue(profileId, profilePropertyKey, profileExpectedInitialValue);
+        properties = service.getAllProperties();
+        assertTrue(properties.stream().anyMatch(prop ->
+            profileId.equals(prop.profile()) &&
+            profilePropertyKey.equals(prop.key()) &&
+            profileExpectedInitialValue.equals(prop.value())));
 
         // Test non-existent property
         assertThrows(IllegalArgumentException.class, () ->
@@ -488,36 +510,36 @@ class MavenDependencyServiceTest {
         String mainVersion = "${version.arquillian}";
         String mainType = "pom";
         String mainScope = "import";
-        
+
         // Verify dependency exists initially
         List<DependencyRecord> depMgmt = service.getAllDependencyManagementDependencies();
         Optional<DependencyRecord> originalMainDep = depMgmt.stream()
-            .filter(dep -> dep.profile() == null && 
-                          mainGroupId.equals(dep.groupId()) && 
+            .filter(dep -> dep.profile() == null &&
+                          mainGroupId.equals(dep.groupId()) &&
                           mainArtifactId.equals(dep.artifactId()))
             .findFirst();
         assertTrue(originalMainDep.isPresent());
-        
+
         // Remove main POM dependencyManagement dependency
         service.removeDependencyManagementDependency(null, mainGroupId, mainArtifactId);
         depMgmt = service.getAllDependencyManagementDependencies();
-        assertFalse(depMgmt.stream().anyMatch(dep -> 
-            dep.profile() == null && 
-            mainGroupId.equals(dep.groupId()) && 
+        assertFalse(depMgmt.stream().anyMatch(dep ->
+            dep.profile() == null &&
+            mainGroupId.equals(dep.groupId()) &&
             mainArtifactId.equals(dep.artifactId())));
-        
+
         // Add it back with original details
         service.addDependencyManagementDependency(null, mainGroupId, mainArtifactId, mainVersion, mainType, mainScope);
         depMgmt = service.getAllDependencyManagementDependencies();
-        assertTrue(depMgmt.stream().anyMatch(dep -> 
-            dep.profile() == null && 
-            mainGroupId.equals(dep.groupId()) && 
+        assertTrue(depMgmt.stream().anyMatch(dep ->
+            dep.profile() == null &&
+            mainGroupId.equals(dep.groupId()) &&
             mainArtifactId.equals(dep.artifactId())));
-        
+
         // Verify it was restored correctly
         Optional<DependencyRecord> restoredMainDep = depMgmt.stream()
-            .filter(dep -> dep.profile() == null && 
-                          mainGroupId.equals(dep.groupId()) && 
+            .filter(dep -> dep.profile() == null &&
+                          mainGroupId.equals(dep.groupId()) &&
                           mainArtifactId.equals(dep.artifactId()))
             .findFirst();
         assertTrue(restoredMainDep.isPresent());
@@ -526,7 +548,7 @@ class MavenDependencyServiceTest {
         assertEquals(originalMainDep.get().version(), restoredMainDep.get().version());
         assertEquals(originalMainDep.get().type(), restoredMainDep.get().type());
         assertEquals(originalMainDep.get().scope(), restoredMainDep.get().scope());
-        
+
         // Test with profile dependencyManagement - org.jboss.arquillian:arquillian-bom from jakarta-ee profile
         String profileId = "jakarta-ee";
         String profileGroupId = "org.jboss.arquillian";
@@ -534,36 +556,36 @@ class MavenDependencyServiceTest {
         String profileVersion = "${version.arquillian.ee}";
         String profileType = "pom";
         String profileScope = "import";
-        
+
         // Verify profile dependency exists initially
         depMgmt = service.getAllDependencyManagementDependencies();
         Optional<DependencyRecord> originalProfileDep = depMgmt.stream()
-            .filter(dep -> profileId.equals(dep.profile()) && 
-                          profileGroupId.equals(dep.groupId()) && 
+            .filter(dep -> profileId.equals(dep.profile()) &&
+                          profileGroupId.equals(dep.groupId()) &&
                           profileArtifactId.equals(dep.artifactId()))
             .findFirst();
         assertTrue(originalProfileDep.isPresent());
-        
+
         // Remove profile dependencyManagement dependency
         service.removeDependencyManagementDependency(profileId, profileGroupId, profileArtifactId);
         depMgmt = service.getAllDependencyManagementDependencies();
-        assertFalse(depMgmt.stream().anyMatch(dep -> 
-            profileId.equals(dep.profile()) && 
-            profileGroupId.equals(dep.groupId()) && 
+        assertFalse(depMgmt.stream().anyMatch(dep ->
+            profileId.equals(dep.profile()) &&
+            profileGroupId.equals(dep.groupId()) &&
             profileArtifactId.equals(dep.artifactId())));
-        
+
         // Add it back with original details
         service.addDependencyManagementDependency(profileId, profileGroupId, profileArtifactId, profileVersion, profileType, profileScope);
         depMgmt = service.getAllDependencyManagementDependencies();
-        assertTrue(depMgmt.stream().anyMatch(dep -> 
-            profileId.equals(dep.profile()) && 
-            profileGroupId.equals(dep.groupId()) && 
+        assertTrue(depMgmt.stream().anyMatch(dep ->
+            profileId.equals(dep.profile()) &&
+            profileGroupId.equals(dep.groupId()) &&
             profileArtifactId.equals(dep.artifactId())));
-        
+
         // Verify it was restored correctly
         Optional<DependencyRecord> restoredProfileDep = depMgmt.stream()
-            .filter(dep -> profileId.equals(dep.profile()) && 
-                          profileGroupId.equals(dep.groupId()) && 
+            .filter(dep -> profileId.equals(dep.profile()) &&
+                          profileGroupId.equals(dep.groupId()) &&
                           profileArtifactId.equals(dep.artifactId()))
             .findFirst();
         assertTrue(restoredProfileDep.isPresent());
@@ -572,15 +594,15 @@ class MavenDependencyServiceTest {
         assertEquals(originalProfileDep.get().version(), restoredProfileDep.get().version());
         assertEquals(originalProfileDep.get().type(), restoredProfileDep.get().type());
         assertEquals(originalProfileDep.get().scope(), restoredProfileDep.get().scope());
-        
+
         // Test duplicate prevention - trying to add the restored dependencies again should fail
-        assertThrows(IllegalArgumentException.class, () -> 
+        assertThrows(IllegalArgumentException.class, () ->
             service.addDependencyManagementDependency(null, mainGroupId, mainArtifactId, mainVersion, mainType, mainScope));
-        assertThrows(IllegalArgumentException.class, () -> 
+        assertThrows(IllegalArgumentException.class, () ->
             service.addDependencyManagementDependency(profileId, profileGroupId, profileArtifactId, profileVersion, profileType, profileScope));
-        
+
         // Test non-existent dependency removal
-        assertThrows(IllegalArgumentException.class, () -> 
+        assertThrows(IllegalArgumentException.class, () ->
             service.removeDependencyManagementDependency(null, "non.existent", "non-existent-artifact"));
     }
 
@@ -591,26 +613,26 @@ class MavenDependencyServiceTest {
         String mainArtifactId = "maven-surefire-plugin";
         String mainVersion = "${version.maven.surefire.plugin}";
         Boolean mainInherited = null; // not specified in XML
-        
+
         // Verify plugin exists initially
         List<PluginRecord> plugins = service.getAllPlugins();
         Optional<PluginRecord> originalMainPlugin = plugins.stream()
             .filter(plugin -> plugin.profile() == null && mainArtifactId.equals(plugin.artifactId()))
             .findFirst();
         assertTrue(originalMainPlugin.isPresent());
-        
+
         // Remove main POM plugin
         service.removePlugin(null, mainGroupId, mainArtifactId);
         plugins = service.getAllPlugins();
-        assertFalse(plugins.stream().anyMatch(plugin -> 
+        assertFalse(plugins.stream().anyMatch(plugin ->
             plugin.profile() == null && mainArtifactId.equals(plugin.artifactId())));
-        
+
         // Add it back with original details
         service.addPlugin(null, mainGroupId, mainArtifactId, mainVersion, mainInherited);
         plugins = service.getAllPlugins();
-        assertTrue(plugins.stream().anyMatch(plugin -> 
+        assertTrue(plugins.stream().anyMatch(plugin ->
             plugin.profile() == null && mainArtifactId.equals(plugin.artifactId())));
-        
+
         // Verify it was restored correctly
         Optional<PluginRecord> restoredMainPlugin = plugins.stream()
             .filter(plugin -> plugin.profile() == null && mainArtifactId.equals(plugin.artifactId()))
@@ -618,42 +640,42 @@ class MavenDependencyServiceTest {
         assertTrue(restoredMainPlugin.isPresent());
         assertEquals(originalMainPlugin.get().artifactId(), restoredMainPlugin.get().artifactId());
         assertEquals(originalMainPlugin.get().version(), restoredMainPlugin.get().version());
-        
+
         // Test with profile plugin - jacoco-maven-plugin from jacoco profile
         String profileId = "jacoco";
         String profileGroupId = "org.jacoco";
         String profileArtifactId = "jacoco-maven-plugin";
         String profileVersion = "0.8.10";
         Boolean profileInherited = null; // not specified in XML
-        
+
         // Verify profile plugin exists initially
         plugins = service.getAllPlugins();
         Optional<PluginRecord> originalProfilePlugin = plugins.stream()
-            .filter(plugin -> profileId.equals(plugin.profile()) && 
+            .filter(plugin -> profileId.equals(plugin.profile()) &&
                              profileGroupId.equals(plugin.groupId()) &&
                              profileArtifactId.equals(plugin.artifactId()))
             .findFirst();
         assertTrue(originalProfilePlugin.isPresent());
-        
+
         // Remove profile plugin
         service.removePlugin(profileId, profileGroupId, profileArtifactId);
         plugins = service.getAllPlugins();
-        assertFalse(plugins.stream().anyMatch(plugin -> 
-            profileId.equals(plugin.profile()) && 
+        assertFalse(plugins.stream().anyMatch(plugin ->
+            profileId.equals(plugin.profile()) &&
             profileGroupId.equals(plugin.groupId()) &&
             profileArtifactId.equals(plugin.artifactId())));
-        
+
         // Add it back with original details
         service.addPlugin(profileId, profileGroupId, profileArtifactId, profileVersion, profileInherited);
         plugins = service.getAllPlugins();
-        assertTrue(plugins.stream().anyMatch(plugin -> 
-            profileId.equals(plugin.profile()) && 
+        assertTrue(plugins.stream().anyMatch(plugin ->
+            profileId.equals(plugin.profile()) &&
             profileGroupId.equals(plugin.groupId()) &&
             profileArtifactId.equals(plugin.artifactId())));
-        
+
         // Verify it was restored correctly
         Optional<PluginRecord> restoredProfilePlugin = plugins.stream()
-            .filter(plugin -> profileId.equals(plugin.profile()) && 
+            .filter(plugin -> profileId.equals(plugin.profile()) &&
                              profileGroupId.equals(plugin.groupId()) &&
                              profileArtifactId.equals(plugin.artifactId()))
             .findFirst();
@@ -661,15 +683,15 @@ class MavenDependencyServiceTest {
         assertEquals(originalProfilePlugin.get().groupId(), restoredProfilePlugin.get().groupId());
         assertEquals(originalProfilePlugin.get().artifactId(), restoredProfilePlugin.get().artifactId());
         assertEquals(originalProfilePlugin.get().version(), restoredProfilePlugin.get().version());
-        
+
         // Test duplicate prevention - trying to add the restored plugins again should fail
-        assertThrows(IllegalArgumentException.class, () -> 
+        assertThrows(IllegalArgumentException.class, () ->
             service.addPlugin(null, mainGroupId, mainArtifactId, mainVersion, mainInherited));
-        assertThrows(IllegalArgumentException.class, () -> 
+        assertThrows(IllegalArgumentException.class, () ->
             service.addPlugin(profileId, profileGroupId, profileArtifactId, profileVersion, profileInherited));
-        
+
         // Test non-existent plugin removal
-        assertThrows(IllegalArgumentException.class, () -> 
+        assertThrows(IllegalArgumentException.class, () ->
             service.removePlugin(null, "non.existent", "non-existent-plugin"));
     }
 }

@@ -949,7 +949,18 @@ public class MavenDependencyService {
 
             // Check if plugin already exists in main build
             boolean exists = model.getBuild().getPlugins().stream()
-                .anyMatch(plugin -> plugin.getGroupId().equals(groupId) && plugin.getArtifactId().equals(artifactId));
+                .anyMatch(plugin -> {
+                    // Handle null groupId case - Maven plugins default to org.apache.maven.plugins
+                    String pluginGroupId = plugin.getGroupId();
+                    if (pluginGroupId == null) {
+                        pluginGroupId = "org.apache.maven.plugins";
+                    }
+                    String targetGroupId = groupId;
+                    if (targetGroupId == null) {
+                        targetGroupId = "org.apache.maven.plugins";
+                    }
+                    return targetGroupId.equals(pluginGroupId) && plugin.getArtifactId().equals(artifactId);
+                });
 
             if (exists) {
                 throw new IllegalArgumentException("Plugin '" + groupId + ":" + artifactId + "' already exists in main POM");
@@ -971,7 +982,18 @@ public class MavenDependencyService {
 
             // Check if plugin already exists in the profile's build
             boolean exists = targetProfile.getBuild().getPlugins().stream()
-                .anyMatch(plugin -> plugin.getGroupId().equals(groupId) && plugin.getArtifactId().equals(artifactId));
+                .anyMatch(plugin -> {
+                    // Handle null groupId case - Maven plugins default to org.apache.maven.plugins
+                    String pluginGroupId = plugin.getGroupId();
+                    if (pluginGroupId == null) {
+                        pluginGroupId = "org.apache.maven.plugins";
+                    }
+                    String targetGroupId = groupId;
+                    if (targetGroupId == null) {
+                        targetGroupId = "org.apache.maven.plugins";
+                    }
+                    return targetGroupId.equals(pluginGroupId) && plugin.getArtifactId().equals(artifactId);
+                });
 
             if (exists) {
                 throw new IllegalArgumentException("Plugin '" + groupId + ":" + artifactId + "' already exists in profile '" + profileId + "'");
