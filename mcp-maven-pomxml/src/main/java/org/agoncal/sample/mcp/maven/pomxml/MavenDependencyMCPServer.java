@@ -24,13 +24,28 @@ public class MavenDependencyMCPServer {
     MavenDependencyService mavenService;
 
     @Tool(name = "gets_all_the_profiles", description = """
-        This method returns all existing profiles from a Maven pom.xml file. This method parses the XML structure of the POM file, locates the <profiles> section, and retrieves all profiles defined within it.
-
-        Example usage:
-        - Input: pom.xml file containing profiles like <profiles><profile><id>jakarta-ee</id></profile><profile><id>jacoco</id></profile></profiles>
-        - Output: Collection containing: {"id": "jakarta-ee", "id": "jacoco"}
-
-        The method handles XML parsing automatically and returns an empty collection if no <profiles> section exists in the pom.xml file. It reads the file without modifying it.
+        Retrieves all Maven profiles from the pom.xml file.
+        
+        **Purpose**: Get a list of all profile IDs defined in the Maven POM file
+        **Input**: None (reads from configured POM file)
+        **Output**: JSON array of profile objects with their IDs
+        **Side effects**: None (read-only operation)
+        
+        **When to use**: 
+        - When you need to see what profiles are available in the project
+        - Before working with profile-specific dependencies, properties, or plugins
+        - To understand project build variants
+        
+        **Example output**:
+        ```json
+        [
+          {"id": "jakarta-ee"},
+          {"id": "jacoco"},
+          {"id": "production"}
+        ]
+        ```
+        
+        Returns empty message if no profiles exist in the POM file.
         """,
         annotations = @Annotations(title = "gets all the profiles", readOnlyHint = true, destructiveHint = false, idempotentHint = false))
     public ToolResponse getAllProfiles() throws IOException, XmlPullParserException {
@@ -46,13 +61,39 @@ public class MavenDependencyMCPServer {
     }
 
     @Tool(name = "gets_all_the_plugins", description = """
-        This method returns all existing plugins from a Maven pom.xml file. This method parses the XML structure of the POM file, locates the <plugins> section, and retrieves all plugin defined within it.
-
-        Example usage:
-        - Input: pom.xml file containing plugins like <plugin><artifactId>maven-compiler-plugin</artifactId><version>${version.maven.compiler.plugin}</version><inherited>true</inherited></plugin>
-        - Output: Collection containing: {"artifactId": "maven-compiler-plugin", "version": "${version.maven.compiler.plugin}", "inherited": "true"}
-
-        The method handles XML parsing automatically and returns an empty collection if no <plugins> section exists in the pom.xml file. It reads the file without modifying it.
+        Retrieves all Maven plugins from the pom.xml file.
+        
+        **Purpose**: Get a list of all plugins defined in the Maven POM file (from main POM and all profiles)
+        **Input**: None (reads from configured POM file)
+        **Output**: JSON array of plugin objects with their details
+        **Side effects**: None (read-only operation)
+        
+        **When to use**: 
+        - When you need to see what plugins are configured in the project
+        - To check plugin versions before updating them
+        - To understand the build configuration and tooling
+        
+        **Example output**:
+        ```json
+        [
+          {
+            "groupId": "org.apache.maven.plugins",
+            "artifactId": "maven-compiler-plugin", 
+            "version": "${version.maven.compiler.plugin}",
+            "inherited": true,
+            "profile": null
+          },
+          {
+            "groupId": "org.jacoco",
+            "artifactId": "jacoco-maven-plugin",
+            "version": "0.8.10", 
+            "inherited": false,
+            "profile": "jacoco"
+          }
+        ]
+        ```
+        
+        Returns empty message if no plugins exist in the POM file.
         """,
         annotations = @Annotations(title = "gets all the plugins", readOnlyHint = true, destructiveHint = false, idempotentHint = false))
     public ToolResponse getAllPlugins() throws IOException, XmlPullParserException {
@@ -68,14 +109,28 @@ public class MavenDependencyMCPServer {
     }
 
     @Tool(name = "removes_an_existing_plugin", description = """
-        This method deletes an existing plugin from a Maven pom.xml file. This method takes a plugin groupId and artifactId as a parameter, locates the specified plugin within the <plugins> section of the POM file, and removes it entirely while preserving all other plugins and the XML structure. The method only removes existing plugins and does not modify the file if the specified key is not found. If profileId is null, the plugin will be removed from the main POM; otherwise, it will be removed from the specified profile.
-
-        Example usage:
-        - Input: profileId null, groupId "org.hibernate.orm", artifactId "hibernate-core"
-        - Before: <plugins><plugin><groupId>org.hibernate.orm</groupId><artifactId>hibernate-core</artifactId><version>6.0.9.Final</version></plugin><plugin><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version></plugin></plugins>
-        - After: <plugins><plugin><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version></plugin></plugins>
-
-        The method handles XML parsing, plugin location, element removal, and file writing operations automatically. If the specified plugin does not exist in the pom.xml, the method typically returns an error or indication that the plugin was not found, without modifying the file. If removing the plugin results in an empty <plugins> section, the implementation may choose to either keep the empty section or remove it entirely.
+        Removes an existing Maven plugin from the pom.xml file.
+        
+        **Purpose**: Delete a specific plugin from the Maven POM file or a specific profile
+        **Input**: Profile ID (null for main POM), groupId and artifactId of the plugin to remove
+        **Output**: Success message confirming removal or error if plugin not found
+        **Side effects**: Modifies the POM file by removing the specified plugin
+        
+        **When to use**: 
+        - When you need to remove unused or unwanted plugins from the build configuration
+        - When cleaning up obsolete build tools
+        - When removing profile-specific plugins
+        
+        **Parameters**:
+        - `profile id`: null for main POM, or specific profile ID (e.g., "jacoco", "production")
+        - `group id`: Maven groupId of the plugin (e.g., "org.apache.maven.plugins")
+        - `artifact id`: Maven artifactId of the plugin (e.g., "maven-compiler-plugin")
+        
+        **Example**: Removing jacoco plugin from "jacoco" profile:
+        - Before: Plugin exists in profile
+        - After: Plugin completely removed from that profile
+        
+        **Error conditions**: Returns error if plugin doesn't exist in specified location.
         """,
         annotations = @Annotations(title = "removes an existing plugin", readOnlyHint = false, destructiveHint = true, idempotentHint = false))
     public ToolResponse removeExistingPlugin(
@@ -96,14 +151,42 @@ public class MavenDependencyMCPServer {
     }
 
     @Tool(name = "gets_all_the_dependencies", description = """
-        This method returns all existing dependencies from a Maven pom.xml file. This means the dependencies in the main project but also all the dependencies for all profiles. This method parses the XML structure of the POM file, locates the <dependencies> sections in the main and in the profiles, and retrieves all dependency defined within it.
-
-        Example usage:
-        - Input: pom.xml file containing dependencies like <dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version><scope>provided</scope></dependency>    <profile><id>jakarta-ee</id><dependencies><dependency><groupId>org.apache.derby</groupId><artifactId>derby</artifactId><version>${version.derby}</version><scope>test</scope></dependency></dependencies></profile>
-
-        - Output: Collection containing: {"groupId": "jakarta.platform", "artifactId": "jakarta.jakartaee-api", "version": "${version.jakarta.ee}", "scope": "provided", "profile": "jakarta-ee", "groupId": :"org.apache.derby", "artifactId": "derby", "version": "${version.derby}", "scope": "test"}
-
-        The method handles XML parsing automatically and returns an empty collection if no <dependencies> section exists in the pom.xml file. It reads the file without modifying it.
+        Retrieves all Maven dependencies from the pom.xml file.
+        
+        **Purpose**: Get a comprehensive list of all dependencies from the main POM and all profiles
+        **Input**: None (reads from configured POM file)
+        **Output**: JSON array of dependency objects with their details
+        **Side effects**: None (read-only operation)
+        
+        **When to use**: 
+        - When you need to see all project dependencies across all profiles
+        - To audit the project's dependency tree
+        - Before adding new dependencies to avoid duplicates
+        - To understand what libraries the project uses
+        
+        **Example output**:
+        ```json
+        [
+          {
+            "groupId": "jakarta.platform",
+            "artifactId": "jakarta.jakartaee-api", 
+            "version": "${version.jakarta.ee}",
+            "scope": "provided",
+            "type": "jar",
+            "profile": null
+          },
+          {
+            "groupId": "org.apache.derby",
+            "artifactId": "derby",
+            "version": "${version.derby}", 
+            "scope": "test",
+            "type": "jar",
+            "profile": "jakarta-ee"
+          }
+        ]
+        ```
+        
+        Returns empty message if no dependencies exist in the POM file.
         """,
         annotations = @Annotations(title = "gets all the dependencies", readOnlyHint = true, destructiveHint = false, idempotentHint = false))
     public ToolResponse getAllDependencies() throws IOException, XmlPullParserException {
@@ -119,13 +202,29 @@ public class MavenDependencyMCPServer {
     }
 
     @Tool(name = "adds_a_new_dependency", description = """
-        This method adds a new dependency to an existing Maven pom.xml file. This method takes a dependency and inserts them into the <dependencies> section of the POM file. If no <dependencies> section exists, the method creates one. The method preserves the existing XML structure and formatting while safely adding the new dependency without overwriting existing dependencies or corrupting the file structure. If profileId is null, the dependency will be added to the main POM; otherwise, it will be added to the specified profile.
-
-        Example usage:
-        - Input: profileId null, dependency name "jakarta.platform", "jakarta.jakartaee-api", "${version.jakarta.ee}", "provided"
-        - Result: Adds <dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version><scope>provided</scope></dependency> to the <dependencies> section of the pom.xml
-
-        The method handles XML parsing, dependency insertion, and file writing operations automatically.
+        Adds a new Maven dependency to the pom.xml file.
+        
+        **Purpose**: Add a new dependency to the Maven POM file or a specific profile
+        **Input**: Profile ID, groupId, artifactId, version, type, and scope of the dependency
+        **Output**: Success message confirming addition or error if dependency already exists
+        **Side effects**: Modifies the POM file by adding the specified dependency
+        
+        **When to use**: 
+        - When you need to add a new library or framework to the project
+        - When adding test-specific dependencies
+        - When adding profile-specific dependencies
+        
+        **Parameters**:
+        - `profile id`: null for main POM, or specific profile ID (e.g., "jakarta-ee", "test")
+        - `group id`: Maven groupId (e.g., "org.junit.jupiter")
+        - `artifact id`: Maven artifactId (e.g., "junit-jupiter")
+        - `version`: Version string (e.g., "5.8.2", "${version.junit}")
+        - `type`: Dependency type (jar, pom, etc.) - defaults to "jar" if null
+        - `scope`: Dependency scope (compile, test, provided, runtime) - defaults to "compile" if null
+        
+        **Example**: Adding JUnit dependency to test scope in main POM.
+        
+        **Error conditions**: Returns error if dependency already exists in specified location.
         """,
         annotations = @Annotations(title = "adds a new dependency", readOnlyHint = false, destructiveHint = false, idempotentHint = false))
     public ToolResponse addNewDependency(
@@ -149,14 +248,27 @@ public class MavenDependencyMCPServer {
     }
 
     @Tool(name = "updates_the_version_of_an_existing_dependency", description = """
-        This method modifies the version of an existing dependency in a Maven pom.xml file. This method takes a profile ID (null for main POM), dependency (groupId and artifactId) and a new version as parameters, locates the specified dependency within the <dependencies> section of the POM file or specific profile, and updates its value while preserving all other dependencies and the XML structure. The method only updates existing dependencies and does not create new ones if the specified groupId and artifactId are not found.
-
-        Example usage:
-        - Input: dependency "jakarta.platform", "jakarta.jakartaee-api", "11"
-        - Before: <dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version></dependency>
-        - After: <dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>11</version></dependency>
-
-        The method handles XML parsing, dependency location, value replacement, and file writing operations automatically. If the specified dependency key does not exist in the pom.xml, the method typically returns an error or indication that the dependency was not found, without modifying the file.
+        Updates the version of an existing Maven dependency in the pom.xml file.
+        
+        **Purpose**: Change the version of an existing dependency in the Maven POM or profile
+        **Input**: Profile ID, groupId, artifactId, and new version
+        **Output**: Success message confirming update or error if dependency not found
+        **Side effects**: Modifies the POM file by updating the dependency version
+        
+        **When to use**: 
+        - When upgrading or downgrading library versions
+        - When fixing security vulnerabilities by updating versions
+        - When standardizing versions across profiles
+        
+        **Parameters**:
+        - `profile id`: null for main POM, or specific profile ID
+        - `group id`: Maven groupId of existing dependency
+        - `artifact id`: Maven artifactId of existing dependency  
+        - `version`: New version string (e.g., "5.9.0", "${version.junit}")
+        
+        **Example**: Updating JUnit from version 5.8.2 to 5.9.0.
+        
+        **Error conditions**: Returns error if dependency doesn't exist in specified location.
         """,
         annotations = @Annotations(title = "updates the version of an existing dependency", readOnlyHint = false, destructiveHint = false, idempotentHint = false))
     public ToolResponse updateExistingDependencyVersion(
@@ -176,14 +288,26 @@ public class MavenDependencyMCPServer {
     }
 
     @Tool(name = "removes_an_existing_dependency", description = """
-        This method deletes an existing dependency from a Maven pom.xml file. This method takes a profile ID (null for main POM), dependency groupId and artifactId as parameters, locates the specified dependency within the <dependencies> section of the POM file or specific profile, and removes it entirely while preserving all other dependencies and the XML structure. The method only removes existing dependencies and does not modify the file if the specified key is not found.
-
-        Example usage:
-        - Input: groupId "org.hibernate.orm", artifactId "hibernate-core"
-        - Before: <dependencies><dependency><groupId>org.hibernate.orm</groupId><artifactId>hibernate-core</artifactId><version>6.0.9.Final</version></dependency><dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version></dependency></dependencies>
-        - After: <dependencies><dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version></dependency></dependencies>
-
-        The method handles XML parsing, dependency location, element removal, and file writing operations automatically. If the specified dependency does not exist in the pom.xml, the method typically returns an error or indication that the dependency was not found, without modifying the file. If removing the dependency results in an empty <dependencies> section, the implementation may choose to either keep the empty section or remove it entirely.
+        Removes an existing Maven dependency from the pom.xml file.
+        
+        **Purpose**: Delete a specific dependency from the Maven POM file or a specific profile
+        **Input**: Profile ID, groupId and artifactId of the dependency to remove
+        **Output**: Success message confirming removal or error if dependency not found
+        **Side effects**: Modifies the POM file by removing the specified dependency
+        
+        **When to use**: 
+        - When removing unused or deprecated dependencies
+        - When cleaning up the project's dependency tree
+        - When removing profile-specific dependencies
+        
+        **Parameters**:
+        - `profile id`: null for main POM, or specific profile ID
+        - `group id`: Maven groupId of the dependency to remove
+        - `artifact id`: Maven artifactId of the dependency to remove
+        
+        **Example**: Removing an unused test library from the project.
+        
+        **Error conditions**: Returns error if dependency doesn't exist in specified location.
         """,
         annotations = @Annotations(title = "removes an existing dependency", readOnlyHint = false, destructiveHint = true, idempotentHint = false))
     public ToolResponse removeExistingDependency(
@@ -202,13 +326,34 @@ public class MavenDependencyMCPServer {
     }
 
     @Tool(name = "gets_all_the_dependency_management_dependencies", description = """
-        This method returns all existing dependencies of a <dependencyManagement> section from a Maven pom.xml file. This method parses the XML structure of the POM file, locates the <dependencies> section within <dependencyManagement>, and retrieves all dependency defined within it.
-
-        Example usage:
-        - Input: pom.xml file containing dependencies like <dependencyManagement><dependencies><dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${version.jakarta.ee}</version><scope>provided</scope></dependency></dependencies></dependencyManagement>
-        - Output: Collection containing: {"groupId": "jakarta.platform", "artifactId": "jakarta.jakartaee-api", "version": "${version.jakarta.ee}", "scope": "provided"}
-
-        The method handles XML parsing automatically and returns an empty collection if no <dependencies> section exists in the pom.xml file. It reads the file without modifying it.
+        Retrieves all Maven dependency management entries from the pom.xml file.
+        
+        **Purpose**: Get all dependencies defined in the dependencyManagement section for version control
+        **Input**: None (reads from configured POM file)
+        **Output**: JSON array of dependency management objects
+        **Side effects**: None (read-only operation)
+        
+        **When to use**: 
+        - When you need to see what dependency versions are centrally managed
+        - To understand version inheritance for child modules
+        - Before adding new dependency management entries
+        - To audit centralized dependency version control
+        
+        **Example output**:
+        ```json
+        [
+          {
+            "groupId": "org.jboss.arquillian",
+            "artifactId": "arquillian-bom",
+            "version": "${version.arquillian}",
+            "type": "pom",
+            "scope": "import",
+            "profile": null
+          }
+        ]
+        ```
+        
+        Returns empty message if no dependency management exists in the POM file.
         """,
         annotations = @Annotations(title = "gets all the dependency management dependencies", readOnlyHint = true, destructiveHint = false, idempotentHint = false))
     public ToolResponse getAllDependenciesManagement() throws IOException, XmlPullParserException {
@@ -224,13 +369,36 @@ public class MavenDependencyMCPServer {
     }
 
     @Tool(name = "gets_all_the_properties", description = """
-        This method returns all existing properties from a Maven pom.xml file. This method parses the XML structure of the POM file, locates the <properties> section, and retrieves all property name-value pairs defined within it.
-
-        Example usage:
-        - Input: pom.xml file containing properties like <java.version>11</java.version>, <maven.compiler.source>11</maven.compiler.source>
-        - Output: Collection containing key-value pairs: {"java.version": "11", "maven.compiler.source": "11"}
-
-        The method handles XML parsing automatically and returns an empty collection if no <properties> section exists in the pom.xml file. It reads the file without modifying it.
+        Retrieves all Maven properties from the pom.xml file.
+        
+        **Purpose**: Get all property key-value pairs from the main POM and all profiles
+        **Input**: None (reads from configured POM file)
+        **Output**: JSON array of property objects with their keys, values, and profile context
+        **Side effects**: None (read-only operation)
+        
+        **When to use**: 
+        - When you need to see what properties are defined in the project
+        - To understand variable substitution in the POM
+        - Before adding new properties to avoid duplicates
+        - To audit property usage across profiles
+        
+        **Example output**:
+        ```json
+        [
+          {
+            "key": "version.java",
+            "value": "17",
+            "profile": null
+          },
+          {
+            "key": "version.jakarta.ee",
+            "value": "10.1.2",
+            "profile": "jakarta-ee"
+          }
+        ]
+        ```
+        
+        Returns empty message if no properties exist in the POM file.
         """,
         annotations = @Annotations(title = "gets all the properties", readOnlyHint = true, destructiveHint = false, idempotentHint = false))
     public ToolResponse getAllProperties() throws IOException, XmlPullParserException {
@@ -246,13 +414,27 @@ public class MavenDependencyMCPServer {
     }
 
     @Tool(name = "adds_a_new_property", description = """
-        This method adds a new property to an existing Maven pom.xml file. This method takes a profile ID (null for main POM) and a property, then inserts them into the <properties> section of the POM file or specific profile. If no <properties> section exists, the method creates one. The method preserves the existing XML structure and formatting while safely adding the new property without overwriting existing properties or corrupting the file structure.
-
-        Example usage:
-        - Input: property name "java.version", value "11"
-        - Result: Adds <java.version>11</java.version> to the <properties> section of the pom.xml
-
-        The method handles XML parsing, property insertion, and file writing operations automatically.
+        Adds a new Maven property to the pom.xml file.
+        
+        **Purpose**: Add a new property key-value pair to the Maven POM or a specific profile
+        **Input**: Profile ID, property key, and property value
+        **Output**: Success message confirming addition or error if property already exists
+        **Side effects**: Modifies the POM file by adding the specified property
+        
+        **When to use**: 
+        - When defining new version variables for dependencies
+        - When adding configuration properties for plugins
+        - When setting profile-specific properties
+        - When centralizing commonly used values
+        
+        **Parameters**:
+        - `profile id`: null for main POM, or specific profile ID
+        - `property key`: Property name (e.g., "version.junit", "maven.compiler.source")
+        - `property value`: Property value (e.g., "5.9.0", "17")
+        
+        **Example**: Adding a new version property for a library.
+        
+        **Error conditions**: Returns error if property already exists in specified location.
         """,
         annotations = @Annotations(title = "adds a new property", readOnlyHint = false, destructiveHint = false, idempotentHint = false))
     public ToolResponse addNewProperty(
@@ -271,14 +453,27 @@ public class MavenDependencyMCPServer {
     }
 
     @Tool(name = "updates_the_value_of_an_existing_property", description = """
-        This method modifies the value of an existing property in a Maven pom.xml file. This method takes a profile ID (null for main POM), property key (name) and a new value as parameters, locates the specified property within the <properties> section of the POM file or specific profile, and updates its value while preserving all other properties and the XML structure. The method only updates existing properties and does not create new ones if the specified key is not found.
-
-        Example usage:
-        - Input: property key "java.version", new value "17"
-        - Before: <java.version>11</java.version>
-        - After: <java.version>17</java.version>
-
-        The method handles XML parsing, property location, value replacement, and file writing operations automatically. If the specified property key does not exist in the pom.xml, the method typically returns an error or indication that the property was not found, without modifying the file.
+        Updates the value of an existing Maven property in the pom.xml file.
+        
+        **Purpose**: Change the value of an existing property in the Maven POM or a specific profile
+        **Input**: Profile ID, property key, and new property value
+        **Output**: Success message confirming update or error if property not found
+        **Side effects**: Modifies the POM file by updating the specified property value
+        
+        **When to use**: 
+        - When updating version numbers for dependencies or plugins
+        - When changing configuration values
+        - When updating profile-specific property values
+        - When standardizing property values across profiles
+        
+        **Parameters**:
+        - `profile id`: null for main POM, or specific profile ID
+        - `property key`: Existing property name to update
+        - `property value`: New value for the property
+        
+        **Example**: Updating Java version from 11 to 17.
+        
+        **Error conditions**: Returns error if property doesn't exist in specified location.
         """,
         annotations = @Annotations(title = "updates the value of an existing property", readOnlyHint = false, destructiveHint = false, idempotentHint = false))
     public ToolResponse updateExistingPropertyValue(
@@ -297,14 +492,26 @@ public class MavenDependencyMCPServer {
     }
 
     @Tool(name = "removes_an_existing_property", description = """
-        This method deletes an existing property from a Maven pom.xml file. This method takes a profile ID (null for main POM) and property key (name) as parameters, locates the specified property within the <properties> section of the POM file or specific profile, and removes it entirely while preserving all other properties and the XML structure. The method only removes existing properties and does not modify the file if the specified key is not found.
-
-        Example usage:
-        - Input: property key "java.version"
-        - Before: <properties><java.version>11</java.version><maven.compiler.source>11</maven.compiler.source></properties>
-        - After: <properties><maven.compiler.source>11</maven.compiler.source></properties>
-
-        The method handles XML parsing, property location, element removal, and file writing operations automatically. If the specified property key does not exist in the pom.xml, the method typically returns an error or indication that the property was not found, without modifying the file. If removing the property results in an empty <properties> section, the implementation may choose to either keep the empty section or remove it entirely.
+        Removes an existing Maven property from the pom.xml file.
+        
+        **Purpose**: Delete a specific property from the Maven POM file or a specific profile
+        **Input**: Profile ID and property key to remove
+        **Output**: Success message confirming removal or error if property not found
+        **Side effects**: Modifies the POM file by removing the specified property
+        
+        **When to use**: 
+        - When cleaning up unused properties
+        - When removing deprecated configuration values
+        - When removing profile-specific properties
+        - When consolidating property definitions
+        
+        **Parameters**:
+        - `profile id`: null for main POM, or specific profile ID
+        - `property key`: Property name to remove
+        
+        **Example**: Removing an obsolete version property.
+        
+        **Error conditions**: Returns error if property doesn't exist in specified location.
         """,
         annotations = @Annotations(title = "removes an existing property", readOnlyHint = false, destructiveHint = true, idempotentHint = false))
     public ToolResponse removeExistingProperty(
