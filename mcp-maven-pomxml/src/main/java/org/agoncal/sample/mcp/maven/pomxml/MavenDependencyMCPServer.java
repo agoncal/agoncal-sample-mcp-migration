@@ -149,7 +149,7 @@ public class MavenDependencyMCPServer {
     }
 
     @Tool(name = "updates_the_version_of_an_existing_dependency", description = """
-        This method modifies the version of an existing dependency in a Maven pom.xml file. This method takes a dependency (groupId and artifactId) and a new version as parameters, locates the specified dependency within the <dependencies> section of the POM file, and updates its value while preserving all other dependencies and the XML structure. The method only updates existing dependencies and does not create new ones if the specified groupId and artifactId are not found.
+        This method modifies the version of an existing dependency in a Maven pom.xml file. This method takes a profile ID (null for main POM), dependency (groupId and artifactId) and a new version as parameters, locates the specified dependency within the <dependencies> section of the POM file or specific profile, and updates its value while preserving all other dependencies and the XML structure. The method only updates existing dependencies and does not create new ones if the specified groupId and artifactId are not found.
 
         Example usage:
         - Input: dependency "jakarta.platform", "jakarta.jakartaee-api", "11"
@@ -160,22 +160,23 @@ public class MavenDependencyMCPServer {
         """,
         annotations = @Annotations(title = "updates the version of an existing dependency", readOnlyHint = false, destructiveHint = false, idempotentHint = false))
     public ToolResponse updateExistingDependencyVersion(
+        @ToolArg(name = "profile id", description = "The profile ID to update the dependency in (null for main POM).") String profileId,
         @ToolArg(name = "group id", description = "The group id of the dependency key to be updated.") String groupId,
         @ToolArg(name = "artifact id", description = "The artifact id of the dependency key to be updated.") String artifactId,
         @ToolArg(name = "version", description = "The new version of the dependency to be updated.") String version)
         throws IOException, XmlPullParserException {
-        log.info("updates the existing dependency " + groupId + " " + artifactId + " " + version);
+        log.info("updates the existing dependency " + groupId + " " + artifactId + " " + version + " in profile " + profileId);
 
         try {
-            mavenService.updateDependencyVersion(groupId, artifactId, version);
-            return ToolResponse.success("The version of the existing dependency " + groupId + ":" + artifactId + " has been updated to " + version);
+            mavenService.updateDependencyVersion(profileId, groupId, artifactId, version);
+            return ToolResponse.success("The version of the existing dependency " + groupId + ":" + artifactId + " has been updated to " + version + (profileId != null ? " from profile '" + profileId + "'" : " from main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }
     }
 
     @Tool(name = "removes_an_existing_dependency", description = """
-        This method deletes an existing dependency from a Maven pom.xml file. This method takes a dependency groupId and artifactId as a parameter, locates the specified dependency within the <dependencies> section of the POM file, and removes it entirely while preserving all other dependencies and the XML structure. The method only removes existing dependencies and does not modify the file if the specified key is not found.
+        This method deletes an existing dependency from a Maven pom.xml file. This method takes a profile ID (null for main POM), dependency groupId and artifactId as parameters, locates the specified dependency within the <dependencies> section of the POM file or specific profile, and removes it entirely while preserving all other dependencies and the XML structure. The method only removes existing dependencies and does not modify the file if the specified key is not found.
 
         Example usage:
         - Input: groupId "org.hibernate.orm", artifactId "hibernate-core"
@@ -186,14 +187,15 @@ public class MavenDependencyMCPServer {
         """,
         annotations = @Annotations(title = "removes an existing dependency", readOnlyHint = false, destructiveHint = true, idempotentHint = false))
     public ToolResponse removeExistingDependency(
+        @ToolArg(name = "profile id", description = "The profile ID to remove the dependency from (null for main POM).") String profileId,
         @ToolArg(name = "group id", description = "The group id of the dependency to be removed.") String groupId,
         @ToolArg(name = "artifact id", description = "The artifact id of the dependency to be removed.") String artifactId)
         throws IOException, XmlPullParserException {
-        log.info("remove the existing dependency " + groupId + " " + artifactId);
+        log.info("remove the existing dependency " + groupId + " " + artifactId + " from profile " + profileId);
 
         try {
-            mavenService.removeDependency(groupId, artifactId);
-            return ToolResponse.success("The existing dependency '" + groupId + ":" + artifactId + "' has been removed");
+            mavenService.removeDependency(profileId, groupId, artifactId);
+            return ToolResponse.success("The existing dependency '" + groupId + ":" + artifactId + "' has been removed" + (profileId != null ? " from profile '" + profileId + "'" : " from main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }
@@ -244,7 +246,7 @@ public class MavenDependencyMCPServer {
     }
 
     @Tool(name = "adds_a_new_property", description = """
-        This method adds a new property to an existing Maven pom.xml file. This method takes a property and inserts them into the <properties> section of the POM file. If no <properties> section exists, the method creates one. The method preserves the existing XML structure and formatting while safely adding the new property without overwriting existing properties or corrupting the file structure.
+        This method adds a new property to an existing Maven pom.xml file. This method takes a profile ID (null for main POM) and a property, then inserts them into the <properties> section of the POM file or specific profile. If no <properties> section exists, the method creates one. The method preserves the existing XML structure and formatting while safely adding the new property without overwriting existing properties or corrupting the file structure.
 
         Example usage:
         - Input: property name "java.version", value "11"
@@ -254,21 +256,22 @@ public class MavenDependencyMCPServer {
         """,
         annotations = @Annotations(title = "adds a new property", readOnlyHint = false, destructiveHint = false, idempotentHint = false))
     public ToolResponse addNewProperty(
+        @ToolArg(name = "profile id", description = "The profile ID to add the property to (null for main POM).") String profileId,
         @ToolArg(name = "property key", description = "The name of the property key to be added.") String key,
         @ToolArg(name = "property value", description = "The value of property to be added.") String value)
         throws IOException, XmlPullParserException {
-        log.info("adds the new property " + key + " with value" + value);
+        log.info("adds the new property " + key + " with value " + value + " to profile " + profileId);
 
         try {
-            mavenService.addProperty(key, value);
-            return ToolResponse.success("The new property " + key + " has been added with value " + value);
+            mavenService.addProperty(profileId, key, value);
+            return ToolResponse.success("The new property " + key + " has been added with value " + value + (profileId != null ? " from profile '" + profileId + "'" : " from main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }
     }
 
     @Tool(name = "updates_the_value_of_an_existing_property", description = """
-        This method modifies the value of an existing property in a Maven pom.xml file. This method takes a property key (name) and a new value as parameters, locates the specified property within the <properties> section of the POM file, and updates its value while preserving all other properties and the XML structure. The method only updates existing properties and does not create new ones if the specified key is not found.
+        This method modifies the value of an existing property in a Maven pom.xml file. This method takes a profile ID (null for main POM), property key (name) and a new value as parameters, locates the specified property within the <properties> section of the POM file or specific profile, and updates its value while preserving all other properties and the XML structure. The method only updates existing properties and does not create new ones if the specified key is not found.
 
         Example usage:
         - Input: property key "java.version", new value "17"
@@ -279,21 +282,22 @@ public class MavenDependencyMCPServer {
         """,
         annotations = @Annotations(title = "updates the value of an existing property", readOnlyHint = false, destructiveHint = false, idempotentHint = false))
     public ToolResponse updateExistingPropertyValue(
+        @ToolArg(name = "profile id", description = "The profile ID to update the property in (null for main POM).") String profileId,
         @ToolArg(name = "property key", description = "The name of the property key to look for.") String key,
         @ToolArg(name = "property value", description = "The new value of the existing property.") String value)
         throws IOException, XmlPullParserException {
-        log.info("updates the existing property " + key + " with the new value" + value);
+        log.info("updates the existing property " + key + " with the new value " + value + " in profile " + profileId);
 
         try {
-            mavenService.updatePropertyValue(key, value);
-            return ToolResponse.success("The value of the existing property " + key + " has been updated to " + value);
+            mavenService.updatePropertyValue(profileId, key, value);
+            return ToolResponse.success("The value of the existing property " + key + " has been updated to " + value + (profileId != null ? " from profile '" + profileId + "'" : " from main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }
     }
 
     @Tool(name = "removes_an_existing_property", description = """
-        This method deletes an existing property from a Maven pom.xml file. This method takes a property key (name) as a parameter, locates the specified property within the <properties> section of the POM file, and removes it entirely while preserving all other properties and the XML structure. The method only removes existing properties and does not modify the file if the specified key is not found.
+        This method deletes an existing property from a Maven pom.xml file. This method takes a profile ID (null for main POM) and property key (name) as parameters, locates the specified property within the <properties> section of the POM file or specific profile, and removes it entirely while preserving all other properties and the XML structure. The method only removes existing properties and does not modify the file if the specified key is not found.
 
         Example usage:
         - Input: property key "java.version"
@@ -304,13 +308,14 @@ public class MavenDependencyMCPServer {
         """,
         annotations = @Annotations(title = "removes an existing property", readOnlyHint = false, destructiveHint = true, idempotentHint = false))
     public ToolResponse removeExistingProperty(
+        @ToolArg(name = "profile id", description = "The profile ID to remove the property from (null for main POM).") String profileId,
         @ToolArg(name = "property key", description = "The name of the property key to remove.") String key)
         throws IOException, XmlPullParserException {
-        log.info("remove the existing property " + key);
+        log.info("remove the existing property " + key + " from profile " + profileId);
 
         try {
-            mavenService.removeProperty(key);
-            return ToolResponse.success("The existing property " + key + " has been removed");
+            mavenService.removeProperty(profileId, key);
+            return ToolResponse.success("The existing property " + key + " has been removed" + (profileId != null ? " from profile '" + profileId + "'" : " from main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }
