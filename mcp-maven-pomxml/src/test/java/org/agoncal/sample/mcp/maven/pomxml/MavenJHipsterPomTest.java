@@ -60,7 +60,7 @@ class MavenJHipsterPomTest {
 
     @Test
     void testJHipsterPomHasDependencyManagement() throws IOException, XmlPullParserException {
-        List<DependencyRecord> depMgmt = service.getAllDependencyManagementDependencies();
+        List<DependencyRecord> depMgmt = service.getAllDependenciesInDependencyManagements();
 
         assertNotNull(depMgmt);
         assertFalse(depMgmt.isEmpty());

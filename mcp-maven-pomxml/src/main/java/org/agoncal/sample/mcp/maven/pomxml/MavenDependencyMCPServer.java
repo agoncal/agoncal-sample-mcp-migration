@@ -144,7 +144,7 @@ public class MavenDependencyMCPServer {
             (profileId != null ? " to profile: " + profileId : " to main POM"));
 
         try {
-            mavenService.addPlugin(profileId, groupId, artifactId, version, inherited);
+            mavenService.addNewPlugin(profileId, groupId, artifactId, version, inherited);
             return ToolResponse.success("The new plugin '" + groupId + ":" + artifactId + ":" + version + "' has been added" +
                 (profileId != null ? " to profile '" + profileId + "'" : " to main POM"));
         } catch (IllegalArgumentException e) {
@@ -186,7 +186,7 @@ public class MavenDependencyMCPServer {
             (profileId != null ? " from profile: " + profileId : " from main POM"));
 
         try {
-            mavenService.removePlugin(profileId, groupId, artifactId);
+            mavenService.removeExistingPlugin(profileId, groupId, artifactId);
             return ToolResponse.success("The existing plugin '" + groupId + ":" + artifactId + "' has been removed" +
                 (profileId != null ? " from profile '" + profileId + "'" : " from main POM"));
         } catch (IllegalArgumentException e) {
@@ -283,7 +283,7 @@ public class MavenDependencyMCPServer {
             (profileId != null ? " to profile: " + profileId : " to main POM"));
 
         try {
-            mavenService.addDependency(profileId, groupId, artifactId, version, type, scope);
+            mavenService.addNewDependency(profileId, groupId, artifactId, version, type, scope);
             return ToolResponse.success("The new dependency " + groupId + ":" + artifactId + ":" + version + " has been added" +
                 (profileId != null ? " to profile '" + profileId + "'" : " to main POM"));
         } catch (IllegalArgumentException e) {
@@ -362,14 +362,14 @@ public class MavenDependencyMCPServer {
         log.info("remove the existing dependency " + groupId + " " + artifactId + " from profile " + profileId);
 
         try {
-            mavenService.removeDependency(profileId, groupId, artifactId);
+            mavenService.removeExistingDependency(profileId, groupId, artifactId);
             return ToolResponse.success("The existing dependency '" + groupId + ":" + artifactId + "' has been removed" + (profileId != null ? " from profile '" + profileId + "'" : " from main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }
     }
 
-    @Tool(name = "gets_all_the_dependency_management_dependencies", description = """
+    @Tool(name = "gets_all_the_dependencies_in_dependency_managements", description = """
         Retrieves all Maven dependency management entries from the pom.xml file.
 
         **Purpose**: Get all dependencies defined in the dependencyManagement section for version control
@@ -400,10 +400,10 @@ public class MavenDependencyMCPServer {
         Returns empty message if no dependency management exists in the POM file.
         """,
         annotations = @Annotations(title = "gets all the dependency management dependencies", readOnlyHint = true, destructiveHint = false, idempotentHint = false))
-    public ToolResponse getAllDependenciesManagement() throws IOException, XmlPullParserException {
+    public ToolResponse getAllDependenciesInDependencyManagements() throws IOException, XmlPullParserException {
         log.info("gets all the dependencies in the dependencyManagement section");
 
-        List<DependencyRecord> dependencies = mavenService.getAllDependencyManagementDependencies();
+        List<DependencyRecord> dependencies = mavenService.getAllDependenciesInDependencyManagements();
 
         if (dependencies.isEmpty()) {
             return ToolResponse.success("No dependencies in the dependencyManagement in the pom.xml file.");
@@ -412,7 +412,50 @@ public class MavenDependencyMCPServer {
         return ToolResponse.success(toJson(dependencies));
     }
 
-    @Tool(name = "adds_a_new_dependency_management_dependency", description = """
+    @Tool(name = "gets_all_the_dependency_managements", description = """
+        Retrieves all Maven dependency management entries from the pom.xml file.
+
+        **Purpose**: Get all dependencies defined in the dependencyManagement section for version control
+        **Input**: None (reads from configured POM file)
+        **Output**: JSON array of dependency management objects
+        **Side effects**: None (read-only operation)
+
+        **When to use**:
+        - When you need to see what dependency versions are centrally managed
+        - To understand version inheritance for child modules
+        - Before adding new dependency management entries
+        - To audit centralized dependency version control
+
+        **Example output**:
+        ```json
+        [
+          {
+            "groupId": "org.jboss.arquillian",
+            "artifactId": "arquillian-bom",
+            "version": "${version.arquillian}",
+            "type": "pom",
+            "scope": "import",
+            "profile": null
+          }
+        ]
+        ```
+
+        Returns empty message if no dependency management exists in the POM file.
+        """,
+        annotations = @Annotations(title = "gets all the dependency managements", readOnlyHint = true, destructiveHint = false, idempotentHint = false))
+    public ToolResponse getAllDependencyManagements() throws IOException, XmlPullParserException {
+        log.info("gets all the dependency managements");
+
+        List<DependencyRecord> dependencies = mavenService.getAllDependencyManagements();
+
+        if (dependencies.isEmpty()) {
+            return ToolResponse.success("No dependencies in the dependencyManagement in the pom.xml file.");
+        }
+
+        return ToolResponse.success(toJson(dependencies));
+    }
+
+    @Tool(name = "adds_a_new_dependency_in_dependency_management", description = """
         Adds a new Maven dependency to the dependencyManagement section of the pom.xml file.
 
         **Purpose**: Add a new dependency to the dependencyManagement section for version control
@@ -438,8 +481,8 @@ public class MavenDependencyMCPServer {
 
         **Error conditions**: Returns error if dependency already exists in specified location.
         """,
-        annotations = @Annotations(title = "adds a new dependency management dependency", readOnlyHint = false, destructiveHint = false, idempotentHint = false))
-    public ToolResponse addNewDependencyManagementDependency(
+        annotations = @Annotations(title = "adds a new dependency in dependency management", readOnlyHint = false, destructiveHint = false, idempotentHint = false))
+    public ToolResponse addNewDependencyInDependencyManagement(
         @ToolArg(name = "profile id", description = "The profile ID to add the dependency to (null for main POM).") String profileId,
         @ToolArg(name = "group id", description = "The group id of the dependency to be added.") String groupId,
         @ToolArg(name = "artifact id", description = "The artifact id of the dependency to be added.") String artifactId,
@@ -451,7 +494,7 @@ public class MavenDependencyMCPServer {
             (profileId != null ? " to profile: " + profileId : " to main POM"));
 
         try {
-            mavenService.addDependencyManagementDependency(profileId, groupId, artifactId, version, type, scope);
+            mavenService.addNewDependencyInDependencyManagement(profileId, groupId, artifactId, version, type, scope);
             return ToolResponse.success("The new dependencyManagement dependency " + groupId + ":" + artifactId + ":" + version + " has been added" +
                 (profileId != null ? " to profile '" + profileId + "'" : " to main POM"));
         } catch (IllegalArgumentException e) {
@@ -536,7 +579,7 @@ public class MavenDependencyMCPServer {
         log.info("adds the new property " + key + " with value " + value + " to profile " + profileId);
 
         try {
-            mavenService.addProperty(profileId, key, value);
+            mavenService.addNewProperty(profileId, key, value);
             return ToolResponse.success("The new property " + key + " has been added with value " + value + (profileId != null ? " from profile '" + profileId + "'" : " from main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
@@ -612,7 +655,7 @@ public class MavenDependencyMCPServer {
         log.info("remove the existing property " + key + " from profile " + profileId);
 
         try {
-            mavenService.removeProperty(profileId, key);
+            mavenService.removeExistingProperty(profileId, key);
             return ToolResponse.success("The existing property " + key + " has been removed" + (profileId != null ? " from profile '" + profileId + "'" : " from main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
@@ -643,7 +686,7 @@ public class MavenDependencyMCPServer {
         **Error conditions**: Returns error if dependency doesn't exist in specified location.
         """,
         annotations = @Annotations(title = "removes an existing dependency management dependency", readOnlyHint = false, destructiveHint = true, idempotentHint = false))
-    public ToolResponse removeExistingDependencyManagementDependency(
+    public ToolResponse removeExistingDependencyInDependencyManagement(
         @ToolArg(name = "profile id", description = "The profile ID to remove the dependency from (null for main POM).") String profileId,
         @ToolArg(name = "group id", description = "The group id of the dependency to be removed.") String groupId,
         @ToolArg(name = "artifact id", description = "The artifact id of the dependency to be removed.") String artifactId)
@@ -652,7 +695,7 @@ public class MavenDependencyMCPServer {
             (profileId != null ? " from profile: " + profileId : " from main POM"));
 
         try {
-            mavenService.removeDependencyManagementDependency(profileId, groupId, artifactId);
+            mavenService.removeExistingDependencyInDependencyManagement(profileId, groupId, artifactId);
             return ToolResponse.success("The existing dependencyManagement dependency '" + groupId + ":" + artifactId + "' has been removed" +
                 (profileId != null ? " from profile '" + profileId + "'" : " from main POM"));
         } catch (IllegalArgumentException e) {
@@ -746,7 +789,7 @@ public class MavenDependencyMCPServer {
         }
     }
 
-    public static String toJson(Object object) throws JsonProcessingException {
+    private static String toJson(Object object) throws JsonProcessingException {
         return jsonMapper.writeValueAsString(object);
     }
 }

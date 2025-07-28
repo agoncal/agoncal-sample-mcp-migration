@@ -62,7 +62,7 @@ class MavenEmptyPomTest {
 
     @Test
     void testEmptyPomHasNoDependencyManagement() throws IOException, XmlPullParserException {
-        List<DependencyRecord> depMgmt = service.getAllDependencyManagementDependencies();
+        List<DependencyRecord> depMgmt = service.getAllDependenciesInDependencyManagements();
 
         assertNotNull(depMgmt);
         assertTrue(depMgmt.isEmpty());
@@ -82,11 +82,11 @@ class MavenEmptyPomTest {
         assertFalse(service.dependencyExists(null, mainGroupId, mainArtifactId));
 
         // Add main POM dependency
-        service.addDependency(null, mainGroupId, mainArtifactId, mainVersion, mainType, mainScope);
+        service.addNewDependency(null, mainGroupId, mainArtifactId, mainVersion, mainType, mainScope);
         assertTrue(service.dependencyExists(null, mainGroupId, mainArtifactId));
 
         // Remove main POM dependency
-        service.removeDependency(null, mainGroupId, mainArtifactId);
+        service.removeExistingDependency(null, mainGroupId, mainArtifactId);
         assertFalse(service.dependencyExists(null, mainGroupId, mainArtifactId));
 
     }
@@ -105,7 +105,7 @@ class MavenEmptyPomTest {
         assertFalse(originalMainProp.isPresent());
 
         // Add main POM property
-        service.addProperty(null, mainPropertyKey, mainPropertyValue);
+        service.addNewProperty(null, mainPropertyKey, mainPropertyValue);
         properties = service.getAllProperties();
         assertTrue(properties.stream().anyMatch(prop ->
             prop.profile() == null &&
@@ -113,7 +113,7 @@ class MavenEmptyPomTest {
                 mainPropertyValue.equals(prop.value())));
 
         // Remove main POM property
-        service.removeProperty(null, mainPropertyKey);
+        service.removeExistingProperty(null, mainPropertyKey);
         properties = service.getAllProperties();
         assertFalse(properties.stream().anyMatch(prop ->
             prop.profile() == null && mainPropertyKey.equals(prop.key())));
@@ -136,13 +136,13 @@ class MavenEmptyPomTest {
         assertFalse(originalMainPlugin.isPresent());
 
         // Add main POM plugin
-        service.addPlugin(null, mainGroupId, mainArtifactId, mainVersion, mainInherited);
+        service.addNewPlugin(null, mainGroupId, mainArtifactId, mainVersion, mainInherited);
         plugins = service.getAllPlugins();
         assertTrue(plugins.stream().anyMatch(plugin ->
             plugin.profile() == null && mainArtifactId.equals(plugin.artifactId())));
 
         // Remove main POM plugin
-        service.removePlugin(null, mainGroupId, mainArtifactId);
+        service.removeExistingPlugin(null, mainGroupId, mainArtifactId);
         plugins = service.getAllPlugins();
         assertFalse(plugins.stream().anyMatch(plugin ->
             plugin.profile() == null && mainArtifactId.equals(plugin.artifactId())));

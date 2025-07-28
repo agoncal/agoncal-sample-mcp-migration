@@ -52,8 +52,8 @@ class MavenDependencyServiceTest {
     }
 
     @Test
-    void testGetAllDependencyManagementDependencies() throws IOException, XmlPullParserException {
-        List<DependencyRecord> depMgmt = service.getAllDependencyManagementDependencies();
+    void testGetAllDependencyManagementsDependencies() throws IOException, XmlPullParserException {
+        List<DependencyRecord> depMgmt = service.getAllDependenciesInDependencyManagements();
 
         assertNotNull(depMgmt);
         assertTrue(depMgmt.size() >= 2); // At least original dependencies
@@ -298,11 +298,11 @@ class MavenDependencyServiceTest {
         assertTrue(originalMainDep.isPresent());
 
         // Remove main POM dependency
-        service.removeDependency(null, mainGroupId, mainArtifactId);
+        service.removeExistingDependency(null, mainGroupId, mainArtifactId);
         assertFalse(service.dependencyExists(null, mainGroupId, mainArtifactId));
 
         // Add it back with original details
-        service.addDependency(null, mainGroupId, mainArtifactId, mainVersion, mainType, mainScope);
+        service.addNewDependency(null, mainGroupId, mainArtifactId, mainVersion, mainType, mainScope);
         assertTrue(service.dependencyExists(null, mainGroupId, mainArtifactId));
 
         // Verify it was restored correctly
@@ -333,11 +333,11 @@ class MavenDependencyServiceTest {
         assertTrue(originalProfileDep.isPresent());
 
         // Remove profile dependency
-        service.removeDependency(profileId, profileGroupId, profileArtifactId);
+        service.removeExistingDependency(profileId, profileGroupId, profileArtifactId);
         assertFalse(service.dependencyExists(profileId, profileGroupId, profileArtifactId));
 
         // Add it back with original details
-        service.addDependency(profileId, profileGroupId, profileArtifactId, profileVersion, profileType, profileScope);
+        service.addNewDependency(profileId, profileGroupId, profileArtifactId, profileVersion, profileType, profileScope);
         assertTrue(service.dependencyExists(profileId, profileGroupId, profileArtifactId));
 
         // Verify it was restored correctly
@@ -355,13 +355,13 @@ class MavenDependencyServiceTest {
 
         // Test duplicate prevention - trying to add the restored dependency again should fail
         assertThrows(IllegalArgumentException.class, () ->
-            service.addDependency(null, mainGroupId, mainArtifactId, mainVersion, mainType, mainScope));
+            service.addNewDependency(null, mainGroupId, mainArtifactId, mainVersion, mainType, mainScope));
         assertThrows(IllegalArgumentException.class, () ->
-            service.addDependency(profileId, profileGroupId, profileArtifactId, profileVersion, profileType, profileScope));
+            service.addNewDependency(profileId, profileGroupId, profileArtifactId, profileVersion, profileType, profileScope));
 
         // Test non-existent dependency removal
         assertThrows(IllegalArgumentException.class, () ->
-            service.removeDependency(null, "non.existent", "artifact"));
+            service.removeExistingDependency(null, "non.existent", "artifact"));
     }
 
     @Test
@@ -445,13 +445,13 @@ class MavenDependencyServiceTest {
         assertEquals(mainPropertyValue, originalMainProp.get().value());
 
         // Remove main POM property
-        service.removeProperty(null, mainPropertyKey);
+        service.removeExistingProperty(null, mainPropertyKey);
         properties = service.getAllProperties();
         assertFalse(properties.stream().anyMatch(prop ->
             prop.profile() == null && mainPropertyKey.equals(prop.key())));
 
         // Add it back with original value
-        service.addProperty(null, mainPropertyKey, mainPropertyValue);
+        service.addNewProperty(null, mainPropertyKey, mainPropertyValue);
         properties = service.getAllProperties();
         assertTrue(properties.stream().anyMatch(prop ->
             prop.profile() == null &&
@@ -472,13 +472,13 @@ class MavenDependencyServiceTest {
         assertEquals(profilePropertyValue, originalProfileProp.get().value());
 
         // Remove profile property
-        service.removeProperty(profileId, profilePropertyKey);
+        service.removeExistingProperty(profileId, profilePropertyKey);
         properties = service.getAllProperties();
         assertFalse(properties.stream().anyMatch(prop ->
             profileId.equals(prop.profile()) && profilePropertyKey.equals(prop.key())));
 
         // Add it back with original value
-        service.addProperty(profileId, profilePropertyKey, profilePropertyValue);
+        service.addNewProperty(profileId, profilePropertyKey, profilePropertyValue);
         properties = service.getAllProperties();
         assertTrue(properties.stream().anyMatch(prop ->
             profileId.equals(prop.profile()) &&
@@ -487,13 +487,13 @@ class MavenDependencyServiceTest {
 
         // Test duplicate prevention - trying to add the restored property again should fail
         assertThrows(IllegalArgumentException.class, () ->
-            service.addProperty(null, mainPropertyKey, mainPropertyValue));
+            service.addNewProperty(null, mainPropertyKey, mainPropertyValue));
         assertThrows(IllegalArgumentException.class, () ->
-            service.addProperty(profileId, profilePropertyKey, profilePropertyValue));
+            service.addNewProperty(profileId, profilePropertyKey, profilePropertyValue));
 
         // Test non-existent property removal
         assertThrows(IllegalArgumentException.class, () ->
-            service.removeProperty(null, "non.existent"));
+            service.removeExistingProperty(null, "non.existent"));
     }
 
     @Test
@@ -506,7 +506,7 @@ class MavenDependencyServiceTest {
         String mainScope = "import";
 
         // Verify dependency exists initially
-        List<DependencyRecord> depMgmt = service.getAllDependencyManagementDependencies();
+        List<DependencyRecord> depMgmt = service.getAllDependenciesInDependencyManagements();
         Optional<DependencyRecord> originalMainDep = depMgmt.stream()
             .filter(dep -> dep.profile() == null &&
                           mainGroupId.equals(dep.groupId()) &&
@@ -515,16 +515,16 @@ class MavenDependencyServiceTest {
         assertTrue(originalMainDep.isPresent());
 
         // Remove main POM dependencyManagement dependency
-        service.removeDependencyManagementDependency(null, mainGroupId, mainArtifactId);
-        depMgmt = service.getAllDependencyManagementDependencies();
+        service.removeExistingDependencyInDependencyManagement(null, mainGroupId, mainArtifactId);
+        depMgmt = service.getAllDependenciesInDependencyManagements();
         assertFalse(depMgmt.stream().anyMatch(dep ->
             dep.profile() == null &&
             mainGroupId.equals(dep.groupId()) &&
             mainArtifactId.equals(dep.artifactId())));
 
         // Add it back with original details
-        service.addDependencyManagementDependency(null, mainGroupId, mainArtifactId, mainVersion, mainType, mainScope);
-        depMgmt = service.getAllDependencyManagementDependencies();
+        service.addNewDependencyInDependencyManagement(null, mainGroupId, mainArtifactId, mainVersion, mainType, mainScope);
+        depMgmt = service.getAllDependenciesInDependencyManagements();
         assertTrue(depMgmt.stream().anyMatch(dep ->
             dep.profile() == null &&
             mainGroupId.equals(dep.groupId()) &&
@@ -552,7 +552,7 @@ class MavenDependencyServiceTest {
         String profileScope = "import";
 
         // Verify profile dependency exists initially
-        depMgmt = service.getAllDependencyManagementDependencies();
+        depMgmt = service.getAllDependenciesInDependencyManagements();
         Optional<DependencyRecord> originalProfileDep = depMgmt.stream()
             .filter(dep -> profileId.equals(dep.profile()) &&
                           profileGroupId.equals(dep.groupId()) &&
@@ -561,16 +561,16 @@ class MavenDependencyServiceTest {
         assertTrue(originalProfileDep.isPresent());
 
         // Remove profile dependencyManagement dependency
-        service.removeDependencyManagementDependency(profileId, profileGroupId, profileArtifactId);
-        depMgmt = service.getAllDependencyManagementDependencies();
+        service.removeExistingDependencyInDependencyManagement(profileId, profileGroupId, profileArtifactId);
+        depMgmt = service.getAllDependenciesInDependencyManagements();
         assertFalse(depMgmt.stream().anyMatch(dep ->
             profileId.equals(dep.profile()) &&
             profileGroupId.equals(dep.groupId()) &&
             profileArtifactId.equals(dep.artifactId())));
 
         // Add it back with original details
-        service.addDependencyManagementDependency(profileId, profileGroupId, profileArtifactId, profileVersion, profileType, profileScope);
-        depMgmt = service.getAllDependencyManagementDependencies();
+        service.addNewDependencyInDependencyManagement(profileId, profileGroupId, profileArtifactId, profileVersion, profileType, profileScope);
+        depMgmt = service.getAllDependenciesInDependencyManagements();
         assertTrue(depMgmt.stream().anyMatch(dep ->
             profileId.equals(dep.profile()) &&
             profileGroupId.equals(dep.groupId()) &&
@@ -591,13 +591,13 @@ class MavenDependencyServiceTest {
 
         // Test duplicate prevention - trying to add the restored dependencies again should fail
         assertThrows(IllegalArgumentException.class, () ->
-            service.addDependencyManagementDependency(null, mainGroupId, mainArtifactId, mainVersion, mainType, mainScope));
+            service.addNewDependencyInDependencyManagement(null, mainGroupId, mainArtifactId, mainVersion, mainType, mainScope));
         assertThrows(IllegalArgumentException.class, () ->
-            service.addDependencyManagementDependency(profileId, profileGroupId, profileArtifactId, profileVersion, profileType, profileScope));
+            service.addNewDependencyInDependencyManagement(profileId, profileGroupId, profileArtifactId, profileVersion, profileType, profileScope));
 
         // Test non-existent dependency removal
         assertThrows(IllegalArgumentException.class, () ->
-            service.removeDependencyManagementDependency(null, "non.existent", "non-existent-artifact"));
+            service.removeExistingDependencyInDependencyManagement(null, "non.existent", "non-existent-artifact"));
     }
 
     @Test
@@ -616,13 +616,13 @@ class MavenDependencyServiceTest {
         assertTrue(originalMainPlugin.isPresent());
 
         // Remove main POM plugin
-        service.removePlugin(null, mainGroupId, mainArtifactId);
+        service.removeExistingPlugin(null, mainGroupId, mainArtifactId);
         plugins = service.getAllPlugins();
         assertFalse(plugins.stream().anyMatch(plugin ->
             plugin.profile() == null && mainArtifactId.equals(plugin.artifactId())));
 
         // Add it back with original details
-        service.addPlugin(null, mainGroupId, mainArtifactId, mainVersion, mainInherited);
+        service.addNewPlugin(null, mainGroupId, mainArtifactId, mainVersion, mainInherited);
         plugins = service.getAllPlugins();
         assertTrue(plugins.stream().anyMatch(plugin ->
             plugin.profile() == null && mainArtifactId.equals(plugin.artifactId())));
@@ -652,7 +652,7 @@ class MavenDependencyServiceTest {
         assertTrue(originalProfilePlugin.isPresent());
 
         // Remove profile plugin
-        service.removePlugin(profileId, profileGroupId, profileArtifactId);
+        service.removeExistingPlugin(profileId, profileGroupId, profileArtifactId);
         plugins = service.getAllPlugins();
         assertFalse(plugins.stream().anyMatch(plugin ->
             profileId.equals(plugin.profile()) &&
@@ -660,7 +660,7 @@ class MavenDependencyServiceTest {
             profileArtifactId.equals(plugin.artifactId())));
 
         // Add it back with original details
-        service.addPlugin(profileId, profileGroupId, profileArtifactId, profileVersion, profileInherited);
+        service.addNewPlugin(profileId, profileGroupId, profileArtifactId, profileVersion, profileInherited);
         plugins = service.getAllPlugins();
         assertTrue(plugins.stream().anyMatch(plugin ->
             profileId.equals(plugin.profile()) &&
@@ -680,12 +680,12 @@ class MavenDependencyServiceTest {
 
         // Test duplicate prevention - trying to add the restored plugins again should fail
         assertThrows(IllegalArgumentException.class, () ->
-            service.addPlugin(null, mainGroupId, mainArtifactId, mainVersion, mainInherited));
+            service.addNewPlugin(null, mainGroupId, mainArtifactId, mainVersion, mainInherited));
         assertThrows(IllegalArgumentException.class, () ->
-            service.addPlugin(profileId, profileGroupId, profileArtifactId, profileVersion, profileInherited));
+            service.addNewPlugin(profileId, profileGroupId, profileArtifactId, profileVersion, profileInherited));
 
         // Test non-existent plugin removal
         assertThrows(IllegalArgumentException.class, () ->
-            service.removePlugin(null, "non.existent", "non-existent-plugin"));
+            service.removeExistingPlugin(null, "non.existent", "non-existent-plugin"));
     }
 }

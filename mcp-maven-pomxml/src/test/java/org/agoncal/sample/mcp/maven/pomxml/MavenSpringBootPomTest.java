@@ -61,7 +61,7 @@ class MavenSpringBootPomTest {
 
     @Test
     void testSpringBootPomHasDependencyManagement() throws IOException, XmlPullParserException {
-        List<DependencyRecord> depMgmt = service.getAllDependencyManagementDependencies();
+        List<DependencyRecord> depMgmt = service.getAllDependenciesInDependencyManagements();
 
         assertNotNull(depMgmt);
         assertTrue(depMgmt.isEmpty());

@@ -98,7 +98,7 @@ public class MavenDependencyService {
      * @throws IOException            if there's an error reading the POM file
      * @throws XmlPullParserException if there's an error parsing the XML
      */
-    public List<DependencyRecord> getAllDependencyManagementDependencies() throws IOException, XmlPullParserException {
+    public List<DependencyRecord> getAllDependenciesInDependencyManagements() throws IOException, XmlPullParserException {
         log.info("Getting dependency management dependencies");
         Model model = readModel();
 
@@ -147,7 +147,7 @@ public class MavenDependencyService {
      * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the dependency already exists or profile not found
      */
-    public void addDependency(String profileId, String groupId, String artifactId, String version, String type, String scope)
+    public void addNewDependency(String profileId, String groupId, String artifactId, String version, String type, String scope)
         throws IOException, XmlPullParserException {
         log.info("Adding dependency: " + groupId + ":" + artifactId + ":" + version +
             (!isProfileNull(profileId) ? " to profile: " + profileId : " to main POM"));
@@ -252,7 +252,7 @@ public class MavenDependencyService {
      * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the dependency doesn't exist or profile not found
      */
-    public void removeDependency(String profileId, String groupId, String artifactId) throws IOException, XmlPullParserException {
+    public void removeExistingDependency(String profileId, String groupId, String artifactId) throws IOException, XmlPullParserException {
         log.info("Removing dependency: " + groupId + ":" + artifactId +
             (!isProfileNull(profileId) ? " from profile: " + profileId : " from main POM"));
         Model model = readModel();
@@ -375,7 +375,7 @@ public class MavenDependencyService {
      * @throws IOException            if there's an error reading the POM file
      * @throws XmlPullParserException if there's an error parsing the XML
      */
-    public List<DependencyRecord> getAllDependenciesByScope(String scope) throws IOException, XmlPullParserException {
+    List<DependencyRecord> getAllDependenciesByScope(String scope) throws IOException, XmlPullParserException {
         log.info("Getting all dependencies with scope: " + scope);
         Model model = readModel();
 
@@ -455,7 +455,7 @@ public class MavenDependencyService {
      * @throws IOException            if there's an error reading the POM file
      * @throws XmlPullParserException if there's an error parsing the XML
      */
-    public List<DependencyRecord> getAllDependencyManagement() throws IOException, XmlPullParserException {
+    public List<DependencyRecord> getAllDependencyManagements() throws IOException, XmlPullParserException {
         log.info("Getting all dependency management dependencies");
         Model model = readModel();
 
@@ -580,7 +580,7 @@ public class MavenDependencyService {
      * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the property doesn't exist or profile not found
      */
-    public void removeProperty(String profileId, String key) throws IOException, XmlPullParserException {
+    public void removeExistingProperty(String profileId, String key) throws IOException, XmlPullParserException {
         log.info("Removing property: " + key +
             (!isProfileNull(profileId) ? " from profile: " + profileId : " from main POM"));
         Model model = readModel();
@@ -657,7 +657,7 @@ public class MavenDependencyService {
      * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the property already exists or profile not found
      */
-    public void addProperty(String profileId, String key, String value) throws IOException, XmlPullParserException {
+    public void addNewProperty(String profileId, String key, String value) throws IOException, XmlPullParserException {
         log.info("Adding property: " + key + " = " + value +
             (!isProfileNull(profileId) ? " to profile: " + profileId : " to main POM"));
         Model model = readModel();
@@ -705,7 +705,7 @@ public class MavenDependencyService {
      * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the dependency already exists or profile not found
      */
-    public void addDependencyManagementDependency(String profileId, String groupId, String artifactId, String version, String type, String scope)
+    public void addNewDependencyInDependencyManagement(String profileId, String groupId, String artifactId, String version, String type, String scope)
         throws IOException, XmlPullParserException {
         log.info("Adding dependencyManagement dependency: " + groupId + ":" + artifactId + ":" + version +
             (!isProfileNull(profileId) ? " to profile: " + profileId : " to main POM"));
@@ -764,7 +764,7 @@ public class MavenDependencyService {
      * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the dependency doesn't exist or profile not found
      */
-    public void removeDependencyManagementDependency(String profileId, String groupId, String artifactId)
+    public void removeExistingDependencyInDependencyManagement(String profileId, String groupId, String artifactId)
         throws IOException, XmlPullParserException {
         log.info("Removing dependencyManagement dependency: " + groupId + ":" + artifactId +
             (!isProfileNull(profileId) ? " from profile: " + profileId : " from main POM"));
@@ -880,7 +880,7 @@ public class MavenDependencyService {
      * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the plugin already exists or profile not found
      */
-    public void addPlugin(String profileId, String groupId, String artifactId, String version, Boolean inherited)
+    public void addNewPlugin(String profileId, String groupId, String artifactId, String version, Boolean inherited)
         throws IOException, XmlPullParserException {
         log.info("Adding plugin: " + groupId + ":" + artifactId + ":" + version +
             (!isProfileNull(profileId) ? " to profile: " + profileId : " to main POM"));
@@ -961,7 +961,7 @@ public class MavenDependencyService {
      * @throws XmlPullParserException   if there's an error parsing the XML
      * @throws IllegalArgumentException if the plugin doesn't exist or profile not found
      */
-    public void removePlugin(String profileId, String groupId, String artifactId) throws IOException, XmlPullParserException {
+    public void removeExistingPlugin(String profileId, String groupId, String artifactId) throws IOException, XmlPullParserException {
         log.info("Removing plugin: " + groupId + ":" + artifactId +
             (!isProfileNull(profileId) ? " from profile: " + profileId : " from main POM"));
         Model model = readModel();
