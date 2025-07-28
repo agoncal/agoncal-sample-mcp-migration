@@ -1,9 +1,11 @@
-package org.agoncal.sample.mcp.maven.pomxml;
+package org.agoncal.sample.mcp.maven.pomxml.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import org.agoncal.sample.mcp.maven.pomxml.model.DependencyRecord;
+import org.agoncal.sample.mcp.maven.pomxml.model.PropertyRecord;
 
 import java.util.List;
 

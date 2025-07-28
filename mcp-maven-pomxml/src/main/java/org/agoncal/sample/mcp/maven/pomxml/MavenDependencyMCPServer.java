@@ -9,6 +9,10 @@ import io.quarkiverse.mcp.server.Tool.Annotations;
 import io.quarkiverse.mcp.server.ToolArg;
 import io.quarkiverse.mcp.server.ToolResponse;
 import jakarta.inject.Inject;
+import org.agoncal.sample.mcp.maven.pomxml.model.DependencyRecord;
+import org.agoncal.sample.mcp.maven.pomxml.model.PluginRecord;
+import org.agoncal.sample.mcp.maven.pomxml.model.ProfileRecord;
+import org.agoncal.sample.mcp.maven.pomxml.model.PropertyRecord;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.jboss.logging.Logger;
 

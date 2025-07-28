@@ -2,6 +2,9 @@ package org.agoncal.sample.mcp.maven.pomxml;
 
 import static io.smallrye.common.constraint.Assert.assertFalse;
 import static io.smallrye.common.constraint.Assert.assertTrue;
+import org.agoncal.sample.mcp.maven.pomxml.model.DependencyRecord;
+import org.agoncal.sample.mcp.maven.pomxml.model.PluginRecord;
+import org.agoncal.sample.mcp.maven.pomxml.model.PropertyRecord;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

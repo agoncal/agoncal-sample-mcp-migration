@@ -1,6 +1,10 @@
 package org.agoncal.sample.mcp.maven.pomxml;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import org.agoncal.sample.mcp.maven.pomxml.model.DependencyRecord;
+import org.agoncal.sample.mcp.maven.pomxml.model.PluginRecord;
+import org.agoncal.sample.mcp.maven.pomxml.model.ProfileRecord;
+import org.agoncal.sample.mcp.maven.pomxml.model.PropertyRecord;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;

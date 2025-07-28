@@ -1,5 +1,6 @@
-package org.agoncal.sample.mcp.maven.pomxml;
+package org.agoncal.sample.mcp.maven.pomxml.util;
 
+import org.agoncal.sample.mcp.maven.pomxml.MavenDependencyMCPServer;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
