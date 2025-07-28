@@ -30,11 +30,28 @@ public class MavenDependencyService {
 
     /**
      * Gets the path to the POM file. Can be overridden by subclasses.
-     * 
+     *
      * @return Path to the POM XML file
      */
     protected Path getPomPath() {
         return Paths.get(Optional.ofNullable(System.getenv("POM_XML_PATH")).orElse(DEFAULT_POM_XML_PATH)).toAbsolutePath();
+    }
+
+    /**
+     * Checks if a profileId represents a null or empty profile.
+     * A profile is considered null if it is:
+     * - null
+     * - equals the string "null"
+     * - empty string
+     * - contains only whitespace characters
+     *
+     * @param profileId the profile ID to check
+     * @return true if the profile should be treated as null/main POM, false otherwise
+     */
+    private boolean isProfileNull(String profileId) {
+        return profileId == null ||
+               "null".equals(profileId.trim()) ||
+               profileId.trim().isEmpty();
     }
 
     /**
@@ -133,10 +150,10 @@ public class MavenDependencyService {
     public void addDependency(String profileId, String groupId, String artifactId, String version, String type, String scope)
         throws IOException, XmlPullParserException {
         log.info("Adding dependency: " + groupId + ":" + artifactId + ":" + version +
-            (profileId != null ? " to profile: " + profileId : " to main POM"));
+            (!isProfileNull(profileId) ? " to profile: " + profileId : " to main POM"));
         Model model = readModel();
 
-        if (profileId == null) {
+        if (isProfileNull(profileId)) {
             // Add to main POM dependencies
             boolean exists = model.getDependencies().stream()
                 .anyMatch(dep -> dep.getGroupId().equals(groupId) && dep.getArtifactId().equals(artifactId));
@@ -218,12 +235,12 @@ public class MavenDependencyService {
     public void updateDependencyVersion(String profileId, String groupId, String artifactId, String newVersion)
         throws IOException, XmlPullParserException {
         log.info("Updating dependency version: " + groupId + ":" + artifactId + " to " + newVersion +
-            (profileId != null ? " in profile: " + profileId : " in main POM"));
+            (!isProfileNull(profileId) ? " in profile: " + profileId : " in main POM"));
         Model model = readModel();
 
         boolean found = false;
 
-        if (profileId == null) {
+        if (isProfileNull(profileId)) {
             // Update in main POM dependencies
             for (Dependency dependency : model.getDependencies()) {
                 if (dependency.getGroupId().equals(groupId) && dependency.getArtifactId().equals(artifactId)) {
@@ -288,10 +305,10 @@ public class MavenDependencyService {
      */
     public void removeDependency(String profileId, String groupId, String artifactId) throws IOException, XmlPullParserException {
         log.info("Removing dependency: " + groupId + ":" + artifactId +
-            (profileId != null ? " from profile: " + profileId : " from main POM"));
+            (!isProfileNull(profileId) ? " from profile: " + profileId : " from main POM"));
         Model model = readModel();
 
-        if (profileId == null) {
+        if (isProfileNull(profileId)) {
             // Remove from main POM dependencies
             Dependency toRemove = null;
             for (Dependency dependency : model.getDependencies()) {
@@ -360,7 +377,7 @@ public class MavenDependencyService {
     public boolean dependencyExists(String profileId, String groupId, String artifactId) throws IOException, XmlPullParserException {
         Model model = readModel();
 
-        if (profileId == null) {
+        if (isProfileNull(profileId)) {
             // Check in main POM dependencies
             return model.getDependencies().stream()
                 .anyMatch(dep -> dep.getGroupId().equals(groupId) && dep.getArtifactId().equals(artifactId));
@@ -630,10 +647,10 @@ public class MavenDependencyService {
      */
     public void removeProperty(String profileId, String key) throws IOException, XmlPullParserException {
         log.info("Removing property: " + key +
-            (profileId != null ? " from profile: " + profileId : " from main POM"));
+            (!isProfileNull(profileId) ? " from profile: " + profileId : " from main POM"));
         Model model = readModel();
 
-        if (profileId == null) {
+        if (isProfileNull(profileId)) {
             // Remove from main POM properties
             if (!model.getProperties().containsKey(key)) {
                 throw new IllegalArgumentException("Property '" + key + "' not found in main POM");
@@ -681,10 +698,10 @@ public class MavenDependencyService {
      */
     public void updatePropertyValue(String profileId, String key, String value) throws IOException, XmlPullParserException {
         log.info("Updating property: " + key + " to " + value +
-            (profileId != null ? " in profile: " + profileId : " in main POM"));
+            (!isProfileNull(profileId) ? " in profile: " + profileId : " in main POM"));
         Model model = readModel();
 
-        if (profileId == null) {
+        if (isProfileNull(profileId)) {
             // Update in main POM properties
             if (!model.getProperties().containsKey(key)) {
                 throw new IllegalArgumentException("Property '" + key + "' not found in main POM");
@@ -734,10 +751,10 @@ public class MavenDependencyService {
      */
     public void addProperty(String profileId, String key, String value) throws IOException, XmlPullParserException {
         log.info("Adding property: " + key + " = " + value +
-            (profileId != null ? " to profile: " + profileId : " to main POM"));
+            (!isProfileNull(profileId) ? " to profile: " + profileId : " to main POM"));
         Model model = readModel();
 
-        if (profileId == null) {
+        if (isProfileNull(profileId)) {
             // Add to main POM properties
             if (model.getProperties().containsKey(key)) {
                 throw new IllegalArgumentException("Property '" + key + "' already exists in main POM");
@@ -797,10 +814,10 @@ public class MavenDependencyService {
     public void addDependencyManagementDependency(String profileId, String groupId, String artifactId, String version, String type, String scope)
         throws IOException, XmlPullParserException {
         log.info("Adding dependencyManagement dependency: " + groupId + ":" + artifactId + ":" + version +
-            (profileId != null ? " to profile: " + profileId : " to main POM"));
+            (!isProfileNull(profileId) ? " to profile: " + profileId : " to main POM"));
         Model model = readModel();
 
-        if (profileId == null) {
+        if (isProfileNull(profileId)) {
             // Add to main POM dependencyManagement
             if (model.getDependencyManagement() == null) {
                 model.setDependencyManagement(new org.apache.maven.model.DependencyManagement());
@@ -874,10 +891,10 @@ public class MavenDependencyService {
     public void removeDependencyManagementDependency(String profileId, String groupId, String artifactId)
         throws IOException, XmlPullParserException {
         log.info("Removing dependencyManagement dependency: " + groupId + ":" + artifactId +
-            (profileId != null ? " from profile: " + profileId : " from main POM"));
+            (!isProfileNull(profileId) ? " from profile: " + profileId : " from main POM"));
         Model model = readModel();
 
-        if (profileId == null) {
+        if (isProfileNull(profileId)) {
             // Remove from main POM dependencyManagement
             if (model.getDependencyManagement() == null || model.getDependencyManagement().getDependencies().isEmpty()) {
                 throw new IllegalArgumentException("DependencyManagement dependency '" + groupId + ":" + artifactId + "' not found in main POM");
@@ -944,10 +961,10 @@ public class MavenDependencyService {
     public void addPlugin(String profileId, String groupId, String artifactId, String version, Boolean inherited)
         throws IOException, XmlPullParserException {
         log.info("Adding plugin: " + groupId + ":" + artifactId + ":" + version +
-            (profileId != null ? " to profile: " + profileId : " to main POM"));
+            (!isProfileNull(profileId) ? " to profile: " + profileId : " to main POM"));
         Model model = readModel();
 
-        if (profileId == null) {
+        if (isProfileNull(profileId)) {
             // Add to main POM build section
             if (model.getBuild() == null) {
                 model.setBuild(new org.apache.maven.model.Build());
@@ -1074,10 +1091,10 @@ public class MavenDependencyService {
      */
     public void removePlugin(String profileId, String groupId, String artifactId) throws IOException, XmlPullParserException {
         log.info("Removing plugin: " + groupId + ":" + artifactId +
-            (profileId != null ? " from profile: " + profileId : " from main POM"));
+            (!isProfileNull(profileId) ? " from profile: " + profileId : " from main POM"));
         Model model = readModel();
 
-        if (profileId == null) {
+        if (isProfileNull(profileId)) {
             // Remove from main POM build section
             if (model.getBuild() == null || model.getBuild().getPlugins().isEmpty()) {
                 throw new IllegalArgumentException("Plugin '" + groupId + ":" + artifactId + "' not found in main POM");
