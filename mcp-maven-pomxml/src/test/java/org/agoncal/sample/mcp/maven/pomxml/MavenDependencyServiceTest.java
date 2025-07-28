@@ -205,16 +205,16 @@ class MavenDependencyServiceTest {
     }
 
     @Test
-    void testFindDependency() throws IOException, XmlPullParserException {
+    void testGetDependency() throws IOException, XmlPullParserException {
         // Find existing dependency
-        Optional<DependencyRecord> found = service.findDependency("jakarta.platform", "jakarta.jakartaee-api");
+        Optional<DependencyRecord> found = service.getDependency("jakarta.platform", "jakarta.jakartaee-api");
         assertTrue(found.isPresent());
         assertEquals("jakarta.platform", found.get().groupId());
         assertEquals("jakarta.jakartaee-api", found.get().artifactId());
         assertEquals("provided", found.get().scope());
 
         // Find non-existent dependency
-        Optional<DependencyRecord> notFound = service.findDependency("non.existent", "artifact");
+        Optional<DependencyRecord> notFound = service.getDependency("non.existent", "artifact");
         assertFalse(notFound.isPresent());
     }
 
@@ -226,19 +226,19 @@ class MavenDependencyServiceTest {
         String newMainVersion = "5.12.0"; // Updated version
 
         // Get original version
-        Optional<DependencyRecord> originalMainDep = service.findDependency(mainGroupId, mainArtifactId);
+        Optional<DependencyRecord> originalMainDep = service.getDependency(mainGroupId, mainArtifactId);
         assertTrue(originalMainDep.isPresent());
         String originalMainVersion = originalMainDep.get().version();
 
         // Update main POM dependency version
         service.updateDependencyVersion(null, mainGroupId, mainArtifactId, newMainVersion);
-        Optional<DependencyRecord> updatedMainDep = service.findDependency(mainGroupId, mainArtifactId);
+        Optional<DependencyRecord> updatedMainDep = service.getDependency(mainGroupId, mainArtifactId);
         assertTrue(updatedMainDep.isPresent());
         assertEquals(newMainVersion, updatedMainDep.get().version());
 
         // Restore original version
         service.updateDependencyVersion(null, mainGroupId, mainArtifactId, originalMainVersion);
-        Optional<DependencyRecord> restoredMainDep = service.findDependency(mainGroupId, mainArtifactId);
+        Optional<DependencyRecord> restoredMainDep = service.getDependency(mainGroupId, mainArtifactId);
         assertTrue(restoredMainDep.isPresent());
         assertEquals(originalMainVersion, restoredMainDep.get().version());
 
@@ -294,7 +294,7 @@ class MavenDependencyServiceTest {
         assertTrue(service.dependencyExists(null, mainGroupId, mainArtifactId));
 
         // Get initial dependency details
-        Optional<DependencyRecord> originalMainDep = service.findDependency(mainGroupId, mainArtifactId);
+        Optional<DependencyRecord> originalMainDep = service.getDependency(mainGroupId, mainArtifactId);
         assertTrue(originalMainDep.isPresent());
 
         // Remove main POM dependency
@@ -306,7 +306,7 @@ class MavenDependencyServiceTest {
         assertTrue(service.dependencyExists(null, mainGroupId, mainArtifactId));
 
         // Verify it was restored correctly
-        Optional<DependencyRecord> restoredMainDep = service.findDependency(mainGroupId, mainArtifactId);
+        Optional<DependencyRecord> restoredMainDep = service.getDependency(mainGroupId, mainArtifactId);
         assertTrue(restoredMainDep.isPresent());
         assertEquals(originalMainDep.get().groupId(), restoredMainDep.get().groupId());
         assertEquals(originalMainDep.get().artifactId(), restoredMainDep.get().artifactId());
