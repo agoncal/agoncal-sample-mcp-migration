@@ -2,6 +2,13 @@
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.5.4</version>
+    <relativePath></relativePath>
+  </parent>
+
   <groupId>org.agoncal.application</groupId>
   <artifactId>petstoreee6</artifactId>
   <version>1.0</version>
@@ -62,13 +69,13 @@
     </dependency>
     <dependency>
       <groupId>org.webjars</groupId>
-      <artifactId>bootstrap</artifactId>
-      <version>${version.bootstrap}</version>
+      <artifactId>jquery</artifactId>
+      <version>${version.jquery}</version>
     </dependency>
     <dependency>
       <groupId>org.webjars</groupId>
-      <artifactId>jquery</artifactId>
-      <version>${version.jquery}</version>
+      <artifactId>bootstrap</artifactId>
+      <version>${version.bootstrap}</version>
     </dependency>
   </dependencies>
   <build>
