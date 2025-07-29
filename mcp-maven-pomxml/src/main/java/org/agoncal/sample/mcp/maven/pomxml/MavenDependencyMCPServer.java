@@ -20,6 +20,8 @@ import org.jboss.logging.Logger;
 import java.io.IOException;
 import java.util.List;
 
+import static org.agoncal.sample.mcp.maven.pomxml.Utils.isProfileNull;
+
 public class MavenDependencyMCPServer {
 
     private static final Logger log = Logger.getLogger(MavenDependencyMCPServer.class);
@@ -146,12 +148,12 @@ public class MavenDependencyMCPServer {
         @ToolArg(name = "inherited", description = "Whether the plugin is inherited by child modules (true/false). Defaults to true if null.") Boolean inherited)
         throws IOException, XmlPullParserException {
         log.info("adds the new plugin " + groupId + " " + artifactId + " " + version + " " + inherited +
-            (profileId != null ? " to profile: " + profileId : " to main POM"));
+            (!isProfileNull(profileId) ? " to profile: " + profileId : " to main POM"));
 
         try {
             mavenService.addNewPlugin(profileId, groupId, artifactId, version, inherited);
             return ToolResponse.success("The new plugin '" + groupId + ":" + artifactId + ":" + version + "' has been added" +
-                (profileId != null ? " to profile '" + profileId + "'" : " to main POM"));
+                (!isProfileNull(profileId) ? " to profile '" + profileId + "'" : " to main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }
@@ -188,12 +190,12 @@ public class MavenDependencyMCPServer {
         @ToolArg(name = "artifact id", description = "The artifact id of the plugin to be removed.") String artifactId)
         throws IOException, XmlPullParserException {
         log.info("remove the existing plugin " + groupId + " " + artifactId +
-            (profileId != null ? " from profile: " + profileId : " from main POM"));
+            (!isProfileNull(profileId) ? " from profile: " + profileId : " from main POM"));
 
         try {
             mavenService.removeExistingPlugin(profileId, groupId, artifactId);
             return ToolResponse.success("The existing plugin '" + groupId + ":" + artifactId + "' has been removed" +
-                (profileId != null ? " from profile '" + profileId + "'" : " from main POM"));
+                (!isProfileNull(profileId) ? " from profile '" + profileId + "'" : " from main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }
@@ -285,12 +287,12 @@ public class MavenDependencyMCPServer {
         @ToolArg(name = "scope", description = "The scope of the dependency key to be added. Can be compile, provided, runtime, test, system, import. The default is compile so you don't need to add <scope>compile</scope>") String scope)
         throws IOException, XmlPullParserException {
         log.info("adds the new dependency " + groupId + " " + artifactId + " " + version + " " + type + " " + scope +
-            (profileId != null ? " to profile: " + profileId : " to main POM"));
+            (!isProfileNull(profileId) ? " to profile: " + profileId : " to main POM"));
 
         try {
             mavenService.addNewDependency(profileId, groupId, artifactId, version, type, scope);
             return ToolResponse.success("The new dependency " + groupId + ":" + artifactId + ":" + version + " has been added" +
-                (profileId != null ? " to profile '" + profileId + "'" : " to main POM"));
+                (!isProfileNull(profileId) ? " to profile '" + profileId + "'" : " to main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }
@@ -330,7 +332,7 @@ public class MavenDependencyMCPServer {
 
         try {
             mavenService.updateDependencyVersion(profileId, groupId, artifactId, version);
-            return ToolResponse.success("The version of the existing dependency " + groupId + ":" + artifactId + " has been updated to " + version + (profileId != null ? " from profile '" + profileId + "'" : " from main POM"));
+            return ToolResponse.success("The version of the existing dependency " + groupId + ":" + artifactId + " has been updated to " + version + (!isProfileNull(profileId) ? " from profile '" + profileId + "'" : " from main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }
@@ -368,7 +370,7 @@ public class MavenDependencyMCPServer {
 
         try {
             mavenService.removeExistingDependency(profileId, groupId, artifactId);
-            return ToolResponse.success("The existing dependency '" + groupId + ":" + artifactId + "' has been removed" + (profileId != null ? " from profile '" + profileId + "'" : " from main POM"));
+            return ToolResponse.success("The existing dependency '" + groupId + ":" + artifactId + "' has been removed" + (!isProfileNull(profileId) ? " from profile '" + profileId + "'" : " from main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }
@@ -496,12 +498,12 @@ public class MavenDependencyMCPServer {
         @ToolArg(name = "scope", description = "The scope of the dependency to be added. Can be compile, provided, runtime, test, system, import. The default is compile so you don't need to add <scope>compile</scope>") String scope)
         throws IOException, XmlPullParserException {
         log.info("adds the new dependencyManagement dependency " + groupId + " " + artifactId + " " + version + " " + type + " " + scope +
-            (profileId != null ? " to profile: " + profileId : " to main POM"));
+            (!isProfileNull(profileId) ? " to profile: " + profileId : " to main POM"));
 
         try {
             mavenService.addNewDependencyInDependencyManagement(profileId, groupId, artifactId, version, type, scope);
             return ToolResponse.success("The new dependencyManagement dependency " + groupId + ":" + artifactId + ":" + version + " has been added" +
-                (profileId != null ? " to profile '" + profileId + "'" : " to main POM"));
+                (!isProfileNull(profileId) ? " to profile '" + profileId + "'" : " to main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }
@@ -585,7 +587,7 @@ public class MavenDependencyMCPServer {
 
         try {
             mavenService.addNewProperty(profileId, key, value);
-            return ToolResponse.success("The new property " + key + " has been added with value " + value + (profileId != null ? " from profile '" + profileId + "'" : " from main POM"));
+            return ToolResponse.success("The new property " + key + " has been added with value " + value + (!isProfileNull(profileId) ? " from profile '" + profileId + "'" : " from main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }
@@ -624,7 +626,7 @@ public class MavenDependencyMCPServer {
 
         try {
             mavenService.updatePropertyValue(profileId, key, value);
-            return ToolResponse.success("The value of the existing property " + key + " has been updated to " + value + (profileId != null ? " from profile '" + profileId + "'" : " from main POM"));
+            return ToolResponse.success("The value of the existing property " + key + " has been updated to " + value + (!isProfileNull(profileId) ? " from profile '" + profileId + "'" : " from main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }
@@ -661,7 +663,7 @@ public class MavenDependencyMCPServer {
 
         try {
             mavenService.removeExistingProperty(profileId, key);
-            return ToolResponse.success("The existing property " + key + " has been removed" + (profileId != null ? " from profile '" + profileId + "'" : " from main POM"));
+            return ToolResponse.success("The existing property " + key + " has been removed" + (!isProfileNull(profileId) ? " from profile '" + profileId + "'" : " from main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }
@@ -697,12 +699,12 @@ public class MavenDependencyMCPServer {
         @ToolArg(name = "artifact id", description = "The artifact id of the dependency to be removed.") String artifactId)
         throws IOException, XmlPullParserException {
         log.info("remove the existing dependencyManagement dependency " + groupId + " " + artifactId +
-            (profileId != null ? " from profile: " + profileId : " from main POM"));
+            (!isProfileNull(profileId) ? " from profile: " + profileId : " from main POM"));
 
         try {
             mavenService.removeExistingDependencyInDependencyManagement(profileId, groupId, artifactId);
             return ToolResponse.success("The existing dependencyManagement dependency '" + groupId + ":" + artifactId + "' has been removed" +
-                (profileId != null ? " from profile '" + profileId + "'" : " from main POM"));
+                (!isProfileNull(profileId) ? " from profile '" + profileId + "'" : " from main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }
@@ -740,12 +742,12 @@ public class MavenDependencyMCPServer {
         @ToolArg(name = "version", description = "The new version of the plugin to be updated.") String version)
         throws IOException, XmlPullParserException {
         log.info("updates the existing plugin " + groupId + " " + artifactId + " " + version +
-            (profileId != null ? " in profile: " + profileId : " in main POM"));
+            (!isProfileNull(profileId) ? " in profile: " + profileId : " in main POM"));
 
         try {
             mavenService.updatePluginVersion(profileId, groupId, artifactId, version);
             return ToolResponse.success("The version of the existing plugin " + groupId + ":" + artifactId + " has been updated to " + version +
-                (profileId != null ? " in profile '" + profileId + "'" : " in main POM"));
+                (!isProfileNull(profileId) ? " in profile '" + profileId + "'" : " in main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }
@@ -783,12 +785,12 @@ public class MavenDependencyMCPServer {
         @ToolArg(name = "version", description = "The new version of the dependency to be updated.") String version)
         throws IOException, XmlPullParserException {
         log.info("updates the existing dependencyManagement dependency " + groupId + " " + artifactId + " " + version +
-            (profileId != null ? " in profile: " + profileId : " in main POM"));
+            (!isProfileNull(profileId) ? " in profile: " + profileId : " in main POM"));
 
         try {
             mavenService.updateDependencyManagementDependencyVersion(profileId, groupId, artifactId, version);
             return ToolResponse.success("The version of the existing dependencyManagement dependency " + groupId + ":" + artifactId + " has been updated to " + version +
-                (profileId != null ? " in profile '" + profileId + "'" : " in main POM"));
+                (!isProfileNull(profileId) ? " in profile '" + profileId + "'" : " in main POM"));
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }

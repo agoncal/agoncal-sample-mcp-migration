@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.agoncal.sample.mcp.maven.pomxml.Utils.isProfileNull;
+
 @ApplicationScoped
 public class MavenDependencyService {
 
@@ -42,22 +44,6 @@ public class MavenDependencyService {
         return Paths.get(Optional.ofNullable(System.getenv("POM_XML_PATH")).orElse(DEFAULT_POM_XML_PATH)).toAbsolutePath();
     }
 
-    /**
-     * Checks if a profileId represents a null or empty profile.
-     * A profile is considered null if it is:
-     * - null
-     * - equals the string "null"
-     * - empty string
-     * - contains only whitespace characters
-     *
-     * @param profileId the profile ID to check
-     * @return true if the profile should be treated as null/main POM, false otherwise
-     */
-    private boolean isProfileNull(String profileId) {
-        return profileId == null ||
-               "null".equals(profileId.trim()) ||
-               profileId.trim().isEmpty();
-    }
 
     /**
      * Retrieves all dependencies from the Maven POM file.
