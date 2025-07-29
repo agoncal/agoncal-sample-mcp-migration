@@ -2,6 +2,7 @@ package org.agoncal.sample.mcp.maven.pomxml;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.agoncal.sample.mcp.maven.pomxml.model.DependencyRecord;
+import org.agoncal.sample.mcp.maven.pomxml.model.ParentRecord;
 import org.agoncal.sample.mcp.maven.pomxml.model.PluginRecord;
 import org.agoncal.sample.mcp.maven.pomxml.model.ProfileRecord;
 import org.agoncal.sample.mcp.maven.pomxml.model.PropertyRecord;
@@ -1104,6 +1105,56 @@ public class MavenDependencyService {
             }
         }
 
+        writeModel(model);
+    }
+
+    /**
+     * Gets the parent POM information from the Maven POM file.
+     * Returns null if no parent is defined in the POM.
+     *
+     * @return ParentRecord containing parent information, or null if no parent exists
+     * @throws IOException            if there's an error reading the POM file
+     * @throws XmlPullParserException if there's an error parsing the XML
+     */
+    public ParentRecord getParent() throws IOException, XmlPullParserException {
+        log.info("Getting parent information");
+        Model model = readModel();
+
+        if (model.getParent() == null) {
+            log.info("No parent found in POM");
+            return null;
+        }
+
+        org.apache.maven.model.Parent parent = model.getParent();
+        return new ParentRecord(
+            parent.getGroupId(),
+            parent.getArtifactId(),
+            parent.getVersion(),
+            parent.getRelativePath()
+        );
+    }
+
+    /**
+     * Updates the version of the parent POM in the Maven POM file.
+     * The parent must exist in the POM for this operation to succeed.
+     *
+     * @param newVersion the new version for the parent POM
+     * @throws IOException              if there's an error reading/writing the POM file
+     * @throws XmlPullParserException   if there's an error parsing the XML
+     * @throws IllegalArgumentException if no parent exists in the POM
+     */
+    public void updateParentVersion(String newVersion) throws IOException, XmlPullParserException {
+        log.info("Updating parent version to: " + newVersion);
+        Model model = readModel();
+
+        if (model.getParent() == null) {
+            throw new IllegalArgumentException("No parent found in POM");
+        }
+
+        String currentVersion = model.getParent().getVersion();
+        log.info("Changing parent version from " + currentVersion + " to " + newVersion);
+        
+        model.getParent().setVersion(newVersion);
         writeModel(model);
     }
 

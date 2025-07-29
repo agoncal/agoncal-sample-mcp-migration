@@ -10,6 +10,7 @@ import io.quarkiverse.mcp.server.ToolArg;
 import io.quarkiverse.mcp.server.ToolResponse;
 import jakarta.inject.Inject;
 import org.agoncal.sample.mcp.maven.pomxml.model.DependencyRecord;
+import org.agoncal.sample.mcp.maven.pomxml.model.ParentRecord;
 import org.agoncal.sample.mcp.maven.pomxml.model.PluginRecord;
 import org.agoncal.sample.mcp.maven.pomxml.model.ProfileRecord;
 import org.agoncal.sample.mcp.maven.pomxml.model.PropertyRecord;
@@ -788,6 +789,84 @@ public class MavenDependencyMCPServer {
             mavenService.updateDependencyManagementDependencyVersion(profileId, groupId, artifactId, version);
             return ToolResponse.success("The version of the existing dependencyManagement dependency " + groupId + ":" + artifactId + " has been updated to " + version +
                 (profileId != null ? " in profile '" + profileId + "'" : " in main POM"));
+        } catch (IllegalArgumentException e) {
+            return ToolResponse.error(e.getMessage());
+        }
+    }
+
+    @Tool(name = "gets_parent", description = """
+        Gets the parent POM information from the Maven pom.xml file.
+
+        **Purpose**: Retrieve information about the parent POM that this project inherits from
+        **Input**: None (reads from current POM)
+        **Output**: JSON containing parent groupId, artifactId, version, and relativePath, or null if no parent
+        **Side effects**: Read-only operation, no modifications to POM
+
+        **When to use**:
+        - When checking what parent POM the project inherits from
+        - When analyzing project inheritance structure
+        - When verifying parent versions before updates
+        - When documenting project dependencies
+
+        **Parameters**: None required
+
+        **Output format**:
+        ```json
+        {
+          "groupId": "org.springframework.boot",
+          "artifactId": "spring-boot-starter-parent", 
+          "version": "3.5.4",
+          "relativePath": "../"
+        }
+        ```
+
+        **Error conditions**: Returns null JSON value if no parent exists in the POM.
+        """,
+        annotations = @Annotations(title = "gets parent", readOnlyHint = true, destructiveHint = false, idempotentHint = true))
+    public ToolResponse getParent() throws IOException, XmlPullParserException {
+        log.info("gets parent information");
+
+        try {
+            ParentRecord parent = mavenService.getParent();
+            if (parent == null) {
+                return ToolResponse.success("null");
+            }
+            return ToolResponse.success(toJson(parent));
+        } catch (Exception e) {
+            return ToolResponse.error(e.getMessage());
+        }
+    }
+
+    @Tool(name = "updates_parent_version", description = """
+        Updates the version of the parent POM in the Maven pom.xml file.
+
+        **Purpose**: Change the version of the parent POM that this project inherits from
+        **Input**: New version for the parent
+        **Output**: Success message confirming update or error if no parent exists
+        **Side effects**: Modifies the POM file by updating the parent version
+
+        **When to use**:
+        - When upgrading to a newer version of a parent POM (e.g., Spring Boot starter parent)
+        - When updating corporate parent POM versions
+        - When migrating to different framework versions
+        - When following parent POM security updates
+
+        **Parameters**:
+        - `version`: New version string for the parent (e.g., "3.2.1", "2.7.18")
+
+        **Example**: Updating Spring Boot parent from 3.5.4 to 3.2.1.
+
+        **Error conditions**: Returns error if no parent exists in the POM.
+        """,
+        annotations = @Annotations(title = "updates parent version", readOnlyHint = false, destructiveHint = false, idempotentHint = false))
+    public ToolResponse updateParentVersion(
+        @ToolArg(name = "version", description = "The new version for the parent POM.") String version)
+        throws IOException, XmlPullParserException {
+        log.info("updates parent version to " + version);
+
+        try {
+            mavenService.updateParentVersion(version);
+            return ToolResponse.success("The parent version has been updated to " + version);
         } catch (IllegalArgumentException e) {
             return ToolResponse.error(e.getMessage());
         }
