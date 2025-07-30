@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Maven-based Quarkus application that implements a Model Context Protocol (MCP) server for Maven POM.xml manipulation. The server exposes MCP tools for reading, adding, updating, and removing Maven POM attributes including properties, dependencies, plugins, profiles, and dependency management.
+This is a Maven-based Quarkus application that implements a Model Context Protocol (MCP) server for Maven POM.xml manipulation. The server exposes MCP tools for reading, adding, updating, and removing Maven POM attributes including properties, dependencies, plugins, profiles, parent information, and dependency management.
 
 ## Build and Development Commands
 
@@ -59,18 +59,19 @@ mvn clean compile
 
 The application follows a clear separation between the **presentation layer** (MCP server) and the **business logic layer** (service):
 
-1. **MavenDependencyMCPServer** - MCP protocol layer that exposes 12 tools to MCP clients
+1. **MavenDependencyMCPServer** - MCP protocol layer that exposes 16 MCP tools to MCP clients
 2. **MavenDependencyService** - Business logic layer that handles all Maven POM manipulation operations
 
 ### Core Components
 
-**MavenDependencyMCPServer** (`src/main/java/org/agoncal/sample/mcp/maven/pomxml/MavenDependencyMCPServer.java`) - Main MCP server class that exposes 12 MCP tools for Maven POM manipulation:
+**MavenDependencyMCPServer** (`src/main/java/org/agoncal/sample/mcp/maven/pomxml/MavenDependencyMCPServer.java`) - Main MCP server class that exposes 16 MCP tools for Maven POM manipulation:
 
 - **Profile Management**: `gets_all_the_profiles`
-- **Plugin Management**: `gets_all_the_plugins`, `removes_an_existing_plugin`
+- **Plugin Management**: `gets_all_the_plugins`, `adds_a_new_plugin`, `removes_an_existing_plugin`, `updates_an_existing_plugin_version`
 - **Dependency Management**: `gets_all_the_dependencies`, `adds_a_new_dependency`, `updates_the_version_of_an_existing_dependency`, `removes_an_existing_dependency`
-- **Dependency Management Section**: `gets_all_the_dependency_management_dependencies`
+- **Dependency Management Section**: `gets_all_the_dependency_managements`, `adds_a_new_dependency_in_dependency_management`, `removes_an_existing_dependency_management_dependency`, `updates_an_existing_dependency_management_dependency_version`
 - **Property Management**: `gets_all_the_properties`, `adds_a_new_property`, `updates_the_value_of_an_existing_property`, `removes_an_existing_property`
+- **Parent Management**: `gets_parent`, `updates_parent_version`
 
 **MavenDependencyService** (`src/main/java/org/agoncal/sample/mcp/maven/pomxml/MavenDependencyService.java`) - Core business logic service that handles:
 - Maven POM file reading/writing using Apache Maven Model API
@@ -93,8 +94,14 @@ The application uses record classes for data transfer:
 - **DependencyRecord** - Represents Maven dependencies with profile context (groupId, artifactId, version, scope, type, profile)
 - **PluginRecord** - Represents Maven plugins with profile context (groupId, artifactId, version, inherited, profile)
 - **ProfileRecord** - Represents Maven profiles (id)
+- **ParentRecord** - Represents parent POM information (groupId, artifactId, version, relativePath)
 - **DependencyManagementRecord** - Represents dependency management entries
 - **ProjectRecord** - Represents project information
+
+### Utility Classes
+
+**Utils** (`src/main/java/org/agoncal/sample/mcp/maven/pomxml/Utils.java`) - Utility class containing:
+- **isProfileNull()** - Case-insensitive method to check if a profileId represents null/main POM (handles null, empty, whitespace, and "null" string values)
 
 ### Key Dependencies
 
@@ -142,13 +149,18 @@ The application provides comprehensive error handling for:
 
 ### Test Structure
 Test files are located in `src/test/java/org/agoncal/sample/mcp/maven/pomxml/`:
-- **MavenDependencyServiceTest.java** - Comprehensive unit tests for the service layer (14 test methods)
-- **MavenEmptyPomTest.java** - Tests for handling empty POM files (4 test methods)  
-- **PomXmlTest.java** - Manual testing of Maven model operations
-- **JsonTest.java** - JSON serialization testing
+- **MavenDependencyServiceTest.java** - Comprehensive unit tests for the service layer (14+ test methods)
+- **MavenEmptyPomTest.java** - Tests for handling empty POM files (4 test methods)
+- **MavenJHipsterPomTest.java** - Tests with JHipster application POM
+- **MavenSpringBootPomTest.java** - Tests with Spring Boot application POM  
+- **UtilsTest.java** - Tests for utility methods (11 test methods)
 
 ### Test Resources
-- **pomee6.xml** - Sample Jakarta EE 10 Petstore application POM with properties, dependencies, profiles, and plugins for testing
+Multiple sample POM files in `src/test/resources/` for different testing scenarios:
+- **pomee6.xml** - Jakarta EE 10 Petstore application POM with properties, dependencies, profiles, and plugins
+- **pomempty.xml** - Minimal POM for edge case testing
+- **pomjhipster.xml** - JHipster application POM for framework-specific testing
+- **pomspringboot.xml** - Spring Boot application POM for framework-specific testing
 
 ### Running Specific Tests
-The comprehensive test suite validates all CRUD operations across profiles and includes edge case handling for non-existent elements.
+The comprehensive test suite validates all CRUD operations across profiles and includes edge case handling for non-existent elements. Use `-Dtest=ClassName` for single test classes or `-Dtest=ClassName#methodName` for individual test methods.
